@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "import", "jsx-a11y", "typescript", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "eslint/no-unused-vars": "error",
+    "react/no-children-prop": [
+      "error",
+      {
+        "allowFunctions": true
+      }
+    ]
+  },
+  "env": {
+    "builtin": true
+  }
+}
