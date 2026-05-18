@@ -14,11 +14,11 @@ const AddressSchema = z.object({
     .transform((val) => (val === "" ? undefined : val)),
 });
 
-export const createVenueSchema = z.object({
+export const venueFormValidationSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(250),
   address: AddressSchema,
 });
 
-export type VenueFormValues = z.input<typeof createVenueSchema>;
-export type VenuePayload = z.output<typeof createVenueSchema>;
+export type VenueFormValues = z.input<typeof venueFormValidationSchema>;
+export type VenuePayload = z.output<typeof venueFormValidationSchema>;

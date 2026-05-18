@@ -4,7 +4,7 @@ import { Button } from "#/shared/components/ui/button.tsx";
 import { useFormContext } from "#/shared/hooks/form-context.tsx";
 
 export function FormActions({ children }: { children: ReactNode }) {
-  return <div className="mt-4 flex gap-2">{children}</div>;
+  return <div className="mt-4 flex justify-end gap-3">{children}</div>;
 }
 
 export function SubmitButton({ children = "Save", ...props }: ComponentProps<typeof Button>) {

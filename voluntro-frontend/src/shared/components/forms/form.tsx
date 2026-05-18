@@ -2,7 +2,7 @@ import type { ComponentProps } from "react";
 
 export default function Form({ children, ...props }: ComponentProps<"form">) {
   return (
-    <form {...props} data-component="Form" className="max-w-lg">
+    <form {...props} data-component="Form" className="max-w-2xl">
       {children}
     </form>
   );

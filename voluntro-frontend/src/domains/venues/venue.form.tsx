@@ -1,9 +1,8 @@
-import { Button } from "@base-ui/react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { useCreateVenue, useUpdateVenue } from "#/domains/venues/use-venues.ts";
-import { createVenueSchema } from "#/domains/venues/venue.schema.ts";
+import { venueFormValidationSchema } from "#/domains/venues/venue.schema.ts";
 import { AddressFields } from "#/shared/components/forms/address-fields.tsx";
 import Form from "#/shared/components/forms/form.tsx";
 import { useAppForm } from "#/shared/hooks/use-form.tsx";
@@ -37,10 +36,10 @@ export default function VenueForm(props: VenueFormProps) {
       },
     },
     validators: {
-      onSubmit: createVenueSchema,
+      onSubmit: venueFormValidationSchema,
     },
     onSubmit: ({ value }) => {
-      const payload = createVenueSchema.parse(value);
+      const payload = venueFormValidationSchema.parse(value);
       if (venueId) {
         update(payload, {
           onSuccess: (venue) => {
@@ -58,7 +57,7 @@ export default function VenueForm(props: VenueFormProps) {
         create(payload, {
           onSuccess: (venue) => {
             form.reset();
-            navigate({ to: "/venues", search: { page: 1, pageSize: 20 } });
+            navigate({ to: "/venues", search: { page: 1, pageSize: 25 } });
             toast.success("Venue created successfully.", {
               action: {
                 label: "View member",
@@ -79,13 +78,18 @@ export default function VenueForm(props: VenueFormProps) {
         form.handleSubmit();
       }}
     >
-      <form.AppField name="name" children={(field) => <field.TextField label="Name" />} />
-      <form.AppField
-        name="description"
-        children={(field) => <field.TextField label="Description" />}
-      />
-      <AddressFields form={form} />
-      <Button type="submit">{venueId ? "Update" : "Create"}</Button>
+      <form.AppForm>
+        <form.AppField name="name" children={(field) => <field.TextField label="Name" />} />
+        <form.AppField
+          name="description"
+          children={(field) => <field.TextField label="Description" />}
+        />
+        <AddressFields form={form} />
+        <form.FormActions>
+          <form.ResetButton />
+          <form.SubmitButton>{venueId ? "Update Venue" : "Create venue"}</form.SubmitButton>
+        </form.FormActions>
+      </form.AppForm>
     </Form>
   );
 }
