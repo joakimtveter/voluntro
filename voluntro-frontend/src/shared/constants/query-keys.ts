@@ -6,3 +6,4 @@ export const ALL_VENUES = "venues";
 export const SINGLE_VENUE = "venue";
 export const ALL_GROUPS = "groups";
 export const SINGLE_GROUP = "group";
+export const GROUP_QUERY = "group-query";

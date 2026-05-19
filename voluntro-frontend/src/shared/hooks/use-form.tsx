@@ -3,6 +3,7 @@ import { createFormHook } from "@tanstack/react-form";
 import BirthdayPicker from "#/shared/components/forms/birthday-picker.tsx";
 import { DatetimePicker } from "#/shared/components/forms/datetime-picker.tsx";
 import { FormActions, ResetButton, SubmitButton } from "#/shared/components/forms/form-actions.tsx";
+import GroupPickerField from "#/shared/components/forms/group-picker-field.tsx";
 import LegalGenderPickerField from "#/shared/components/forms/legal-gender-picker-field.tsx";
 import TextArea from "#/shared/components/forms/text-area.tsx";
 import TextField from "#/shared/components/forms/text-field.tsx";
@@ -19,6 +20,7 @@ export const { useAppForm } = createFormHook({
     VenuePicker,
     BirthdayPicker,
     LegalGenderPickerField,
+    GroupPickerField,
   },
   formComponents: {
     FormActions,

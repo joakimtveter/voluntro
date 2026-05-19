@@ -4,9 +4,9 @@ import { toast } from "sonner";
 
 import type { GroupPayload } from "#/domains/groups/group.schema.ts";
 import type { Group, GroupBrief } from "#/domains/groups/group.types.ts";
-import { ALL_GROUPS, SINGLE_GROUP } from "#/shared/constants/query-keys.ts";
+import { ALL_GROUPS, GROUP_QUERY, SINGLE_GROUP } from "#/shared/constants/query-keys.ts";
 import { apiFetch } from "#/shared/lib/fetch/api-fetch.ts";
-import type { PaginatedList, Pagination } from "#/shared/types/api.types.ts";
+import type { PaginatedList, Pagination, SelectOption } from "#/shared/types/api.types.ts";
 
 async function getGroups(pagination: Pagination) {
   return await apiFetch<PaginatedList<GroupBrief>>("/groups", { query: pagination });
@@ -102,5 +102,15 @@ export function useDeleteEvent(groupId: string) {
       toast.error("Could not delete group", {
         description: error.message,
       }),
+  });
+}
+
+async function groupComboboxQuery(query: string) {
+  return await apiFetch<SelectOption[]>(`/query/groups?${query}`);
+}
+export function useGroupQuery(query: string) {
+  return useQuery({
+    queryKey: [ALL_GROUPS, GROUP_QUERY, query],
+    queryFn: () => groupComboboxQuery(query),
   });
 }

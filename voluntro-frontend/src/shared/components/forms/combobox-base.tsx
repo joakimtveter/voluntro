@@ -23,6 +23,7 @@ type ComboBoxProps = {
   options: Option[];
   value?: Option | null;
   onValueChange?: (value: Option | null) => void;
+  onSearchChange?: (value: string) => void;
   onBlur?: () => void;
   loading?: boolean;
 };
@@ -36,6 +37,7 @@ export function ComboboxBase(props: ComboBoxProps) {
     noItemsMessage = "No items found.",
     value,
     onValueChange,
+    onSearchChange,
     onBlur,
     loading = false,
   } = props;
@@ -46,8 +48,14 @@ export function ComboboxBase(props: ComboBoxProps) {
   return (
     <Field>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Combobox items={options} value={value} onValueChange={onValueChange}>
-        <ComboboxInput id={id} placeholder={placeholder} onBlur={onBlur} disabled={loading} />
+      <Combobox items={options} value={value} onValueChange={onValueChange} filter={onSearchChange ? null : undefined}>
+        <ComboboxInput
+          id={id}
+          placeholder={placeholder}
+          onBlur={onBlur}
+          disabled={loading}
+          onChange={onSearchChange ? (e) => onSearchChange(e.target.value) : undefined}
+        />
         <ComboboxContent>
           <ComboboxEmpty>{loading ? "Loading..." : noItemsMessage}</ComboboxEmpty>
           <ComboboxList>

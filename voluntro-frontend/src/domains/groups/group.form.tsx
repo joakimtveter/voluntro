@@ -59,6 +59,10 @@ export default function GroupForm(props: GroupFormProps) {
           name="description"
           children={(field) => <field.TextArea label="Description" />}
         />
+        <form.AppField
+          name="parentGroupId"
+          children={(field) => <field.GroupPickerField groupId={groupId} />}
+        />
         <form.FormActions>
           <form.SubmitButton />
           <form.ResetButton />
