@@ -10,7 +10,7 @@ export const Route = createFileRoute("/events/add")({
 function RouteComponent() {
   return (
     <PageWrapper title="Create event">
-      <EventForm action="create" />
+      <EventForm />
     </PageWrapper>
   );
 }

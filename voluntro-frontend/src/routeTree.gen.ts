@@ -28,7 +28,7 @@ import { Route as EventsEventIdIndexRouteImport } from './routes/events.$eventId
 import { Route as VenuesVenueIdEditRouteImport } from './routes/venues.$venueId.edit'
 import { Route as MembersMemberIdEditRouteImport } from './routes/members.$memberId.edit'
 import { Route as GroupsGroupIdEditRouteImport } from './routes/groups.$groupId.edit'
-import { Route as EventsEventIdEditRouteImport } from './routes/events.eventId.edit'
+import { Route as EventsEventIdEditRouteImport } from './routes/events.$eventId.edit'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -126,8 +126,8 @@ const GroupsGroupIdEditRoute = GroupsGroupIdEditRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsEventIdEditRoute = EventsEventIdEditRouteImport.update({
-  id: '/events/eventId/edit',
-  path: '/events/eventId/edit',
+  id: '/events/$eventId/edit',
+  path: '/events/$eventId/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -144,7 +144,7 @@ export interface FileRoutesByFullPath {
   '/groups/': typeof GroupsIndexRoute
   '/members/': typeof MembersIndexRoute
   '/venues/': typeof VenuesIndexRoute
-  '/events/eventId/edit': typeof EventsEventIdEditRoute
+  '/events/$eventId/edit': typeof EventsEventIdEditRoute
   '/groups/$groupId/edit': typeof GroupsGroupIdEditRoute
   '/members/$memberId/edit': typeof MembersMemberIdEditRoute
   '/venues/$venueId/edit': typeof VenuesVenueIdEditRoute
@@ -165,7 +165,7 @@ export interface FileRoutesByTo {
   '/groups': typeof GroupsIndexRoute
   '/members': typeof MembersIndexRoute
   '/venues': typeof VenuesIndexRoute
-  '/events/eventId/edit': typeof EventsEventIdEditRoute
+  '/events/$eventId/edit': typeof EventsEventIdEditRoute
   '/groups/$groupId/edit': typeof GroupsGroupIdEditRoute
   '/members/$memberId/edit': typeof MembersMemberIdEditRoute
   '/venues/$venueId/edit': typeof VenuesVenueIdEditRoute
@@ -188,7 +188,7 @@ export interface FileRoutesById {
   '/groups/': typeof GroupsIndexRoute
   '/members/': typeof MembersIndexRoute
   '/venues/': typeof VenuesIndexRoute
-  '/events/eventId/edit': typeof EventsEventIdEditRoute
+  '/events/$eventId/edit': typeof EventsEventIdEditRoute
   '/groups/$groupId/edit': typeof GroupsGroupIdEditRoute
   '/members/$memberId/edit': typeof MembersMemberIdEditRoute
   '/venues/$venueId/edit': typeof VenuesVenueIdEditRoute
@@ -212,7 +212,7 @@ export interface FileRouteTypes {
     | '/groups/'
     | '/members/'
     | '/venues/'
-    | '/events/eventId/edit'
+    | '/events/$eventId/edit'
     | '/groups/$groupId/edit'
     | '/members/$memberId/edit'
     | '/venues/$venueId/edit'
@@ -233,7 +233,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/members'
     | '/venues'
-    | '/events/eventId/edit'
+    | '/events/$eventId/edit'
     | '/groups/$groupId/edit'
     | '/members/$memberId/edit'
     | '/venues/$venueId/edit'
@@ -255,7 +255,7 @@ export interface FileRouteTypes {
     | '/groups/'
     | '/members/'
     | '/venues/'
-    | '/events/eventId/edit'
+    | '/events/$eventId/edit'
     | '/groups/$groupId/edit'
     | '/members/$memberId/edit'
     | '/venues/$venueId/edit'
@@ -422,10 +422,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GroupsGroupIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/events/eventId/edit': {
-      id: '/events/eventId/edit'
-      path: '/events/eventId/edit'
-      fullPath: '/events/eventId/edit'
+    '/events/$eventId/edit': {
+      id: '/events/$eventId/edit'
+      path: '/events/$eventId/edit'
+      fullPath: '/events/$eventId/edit'
       preLoaderRoute: typeof EventsEventIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }

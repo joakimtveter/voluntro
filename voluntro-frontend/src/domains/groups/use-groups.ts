@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import type { GroupPayload } from "#/domains/groups/group.schema.ts";
 import type { Group, GroupBrief } from "#/domains/groups/group.types.ts";
 import { ALL_GROUPS, GROUP_QUERY, SINGLE_GROUP } from "#/shared/constants/query-keys.ts";
+import { ApiError } from "#/shared/lib/fetch/api-error.ts";
 import { apiFetch } from "#/shared/lib/fetch/api-fetch.ts";
 import type { PaginatedList, Pagination, SelectOption } from "#/shared/types/api.types.ts";
 
@@ -74,9 +75,9 @@ export function useUpdateGroup(groupId: string) {
       });
       toast.success("Group updated successfully.");
     },
-    onError: (error) =>
+    onError: (error: ApiError) =>
       toast.error("Could not update group", {
-        description: error.message,
+        description: error.responseBody,
       }),
   });
 }
@@ -98,10 +99,11 @@ export function useDeleteEvent(groupId: string) {
       });
       toast.success("Group successfully deleted.");
     },
-    onError: (error) =>
+    onError: (error: ApiError) => {
       toast.error("Could not delete group", {
-        description: error.message,
-      }),
+        description: error.responseBody,
+      });
+    },
   });
 }
 

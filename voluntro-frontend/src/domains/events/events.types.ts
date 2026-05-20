@@ -4,11 +4,11 @@ export type EventBrief = {
   id: string;
   title: string;
   description: string;
-  eventStart: string;
-  eventEnd: string;
+  startsAt: string;
+  endsAt: string;
+  venueId: string;
 };
 
 export type Event = {
-  venueId: string;
   venue: VenueBrief;
 } & EventBrief;

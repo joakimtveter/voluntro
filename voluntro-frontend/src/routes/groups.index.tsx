@@ -153,7 +153,6 @@ function GroupsPage() {
           onPageChange={goToPage}
           onPageSizeChange={changePageSize}
         />
-        <pre>{JSON.stringify(data, null, 2)}</pre>
       </PageWrapper>
     );
   }

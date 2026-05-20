@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import type { Member, MemberBrief } from "#/domains/members/member.types.ts";
 import type { MemberPayload } from "#/domains/members/members.schema.ts";
 import { ALL_MEMBERS, SINGLE_MEMBER } from "#/shared/constants/query-keys.ts";
+import type { ApiError } from "#/shared/lib/fetch/api-error.ts";
 import { apiFetch } from "#/shared/lib/fetch/api-fetch.ts";
 import type { PaginatedList, Pagination } from "#/shared/types/api.types.ts";
 
@@ -47,8 +48,8 @@ export function useCreateMember() {
       });
       toast.success("Member successfully created.");
     },
-    onError: (error) => {
-      toast.error("Unable to update member", { description: error.message });
+    onError: (error: ApiError) => {
+      toast.error("Unable to update member", { description: error.responseBody });
     },
   });
 }
@@ -70,8 +71,8 @@ export function useUpdateMember(memberId: string) {
       });
       toast.success("Member updated");
     },
-    onError: (error) => {
-      toast.error("Unable to update member", { description: error.message });
+    onError: (error: ApiError) => {
+      toast.error("Unable to update member", { description: error.responseBody });
     },
   });
 }

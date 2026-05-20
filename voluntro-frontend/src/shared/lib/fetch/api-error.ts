@@ -5,7 +5,7 @@ export class ApiError extends Error {
   statusText: string;
   url: string;
   problem?: ProblemDetails;
-  responseBody?: unknown;
+  responseBody?: string;
 
   constructor(args: {
     message: string;
@@ -13,7 +13,7 @@ export class ApiError extends Error {
     statusText: string;
     url: string;
     problem?: ProblemDetails;
-    responseBody?: unknown;
+    responseBody?: string;
   }) {
     super(args.message);
 

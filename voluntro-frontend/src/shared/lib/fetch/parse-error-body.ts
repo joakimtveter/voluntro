@@ -1,4 +1,4 @@
-export async function parseErrorBody(response: Response): Promise<unknown> {
+export async function parseErrorBody(response: Response): Promise<string | undefined> {
   if (response.status === 204 || response.status === 205) {
     return undefined;
   }
@@ -15,7 +15,7 @@ export async function parseErrorBody(response: Response): Promise<unknown> {
     contentType.includes("application/problem+json")
   ) {
     try {
-      return JSON.parse(text);
+      return JSON.stringify(JSON.parse(text));
     } catch {
       return text;
     }
