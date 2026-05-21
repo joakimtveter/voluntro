@@ -3,12 +3,7 @@ import { FormDevtoolsPanel } from "@tanstack/react-form-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
-import {
-  HeadContent,
-  Scripts,
-  createRootRouteWithContext,
-  useLocation,
-} from "@tanstack/react-router";
+import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import type { ReactNode } from "react";
 
@@ -48,9 +43,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
-  const { pathname } = useLocation();
-  const isAdmin = pathname.startsWith("/admin");
-
   return (
     <html lang="en" data-theme="light" suppressHydrationWarning>
       <head>
@@ -61,10 +53,8 @@ function RootDocument({ children }: { children: ReactNode }) {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <SiteHeader />
-            <div className={`flex-1 ${isAdmin ? "overflow-hidden" : "overflow-y-auto"}`}>
-              {children}
-            </div>
-            {!isAdmin && <SiteFooter />}
+            <div className="flex-1 overflow-y-auto">{children}</div>
+            <SiteFooter />
             <Toaster />
             <TanStackDevtools
               config={{

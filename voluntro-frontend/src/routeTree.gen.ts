@@ -21,6 +21,10 @@ import { Route as VenuesAddRouteImport } from './routes/venues.add'
 import { Route as MembersAddRouteImport } from './routes/members.add'
 import { Route as GroupsAddRouteImport } from './routes/groups.add'
 import { Route as EventsAddRouteImport } from './routes/events.add'
+import { Route as AdminVenuesRouteImport } from './routes/admin.venues'
+import { Route as AdminMembersRouteImport } from './routes/admin.members'
+import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
+import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as VenuesVenueIdIndexRouteImport } from './routes/venues.$venueId.index'
 import { Route as MembersMemberIdIndexRouteImport } from './routes/members.$memberId.index'
 import { Route as GroupsGroupIdIndexRouteImport } from './routes/groups.$groupId.index'
@@ -90,6 +94,26 @@ const EventsAddRoute = EventsAddRouteImport.update({
   path: '/events/add',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminVenuesRoute = AdminVenuesRouteImport.update({
+  id: '/venues',
+  path: '/venues',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMembersRoute = AdminMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGroupsRoute = AdminGroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEventsRoute = AdminEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => AdminRoute,
+} as any)
 const VenuesVenueIdIndexRoute = VenuesVenueIdIndexRouteImport.update({
   id: '/venues/$venueId/',
   path: '/venues/$venueId/',
@@ -135,6 +159,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin/events': typeof AdminEventsRoute
+  '/admin/groups': typeof AdminGroupsRoute
+  '/admin/members': typeof AdminMembersRoute
+  '/admin/venues': typeof AdminVenuesRoute
   '/events/add': typeof EventsAddRoute
   '/groups/add': typeof GroupsAddRoute
   '/members/add': typeof MembersAddRoute
@@ -156,6 +184,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin/events': typeof AdminEventsRoute
+  '/admin/groups': typeof AdminGroupsRoute
+  '/admin/members': typeof AdminMembersRoute
+  '/admin/venues': typeof AdminVenuesRoute
   '/events/add': typeof EventsAddRoute
   '/groups/add': typeof GroupsAddRoute
   '/members/add': typeof MembersAddRoute
@@ -179,6 +211,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin/events': typeof AdminEventsRoute
+  '/admin/groups': typeof AdminGroupsRoute
+  '/admin/members': typeof AdminMembersRoute
+  '/admin/venues': typeof AdminVenuesRoute
   '/events/add': typeof EventsAddRoute
   '/groups/add': typeof GroupsAddRoute
   '/members/add': typeof MembersAddRoute
@@ -203,6 +239,10 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/admin/events'
+    | '/admin/groups'
+    | '/admin/members'
+    | '/admin/venues'
     | '/events/add'
     | '/groups/add'
     | '/members/add'
@@ -224,6 +264,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/admin/events'
+    | '/admin/groups'
+    | '/admin/members'
+    | '/admin/venues'
     | '/events/add'
     | '/groups/add'
     | '/members/add'
@@ -246,6 +290,10 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/admin/events'
+    | '/admin/groups'
+    | '/admin/members'
+    | '/admin/venues'
     | '/events/add'
     | '/groups/add'
     | '/members/add'
@@ -373,6 +421,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsAddRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/venues': {
+      id: '/admin/venues'
+      path: '/venues'
+      fullPath: '/admin/venues'
+      preLoaderRoute: typeof AdminVenuesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/members': {
+      id: '/admin/members'
+      path: '/members'
+      fullPath: '/admin/members'
+      preLoaderRoute: typeof AdminMembersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/groups': {
+      id: '/admin/groups'
+      path: '/groups'
+      fullPath: '/admin/groups'
+      preLoaderRoute: typeof AdminGroupsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events': {
+      id: '/admin/events'
+      path: '/events'
+      fullPath: '/admin/events'
+      preLoaderRoute: typeof AdminEventsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/venues/$venueId/': {
       id: '/venues/$venueId/'
       path: '/venues/$venueId'
@@ -433,10 +509,18 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminEventsRoute: typeof AdminEventsRoute
+  AdminGroupsRoute: typeof AdminGroupsRoute
+  AdminMembersRoute: typeof AdminMembersRoute
+  AdminVenuesRoute: typeof AdminVenuesRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminEventsRoute: AdminEventsRoute,
+  AdminGroupsRoute: AdminGroupsRoute,
+  AdminMembersRoute: AdminMembersRoute,
+  AdminVenuesRoute: AdminVenuesRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
