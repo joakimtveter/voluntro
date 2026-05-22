@@ -19,7 +19,15 @@ public class GetGroupsQuery
     /// When set, returns only the direct children of this group.
     /// </summary>
     public Guid? ParentGroupId { get; init; }
+}
 
-    /// <summary>When <c>true</c> the result includes groups that have a parent.</summary>
-    public bool IncludeNonRootGroups { get; init; } = false;
+/// <summary>
+/// Query parameters for retrieving a paginated list of groups when logged in as an admin.
+/// </summary>
+public class AdminGetGroupsQuery : GetGroupsQuery
+{
+    /// <summary>
+    /// Include deleted groups in the result.
+    /// </summary>
+    public bool IncludeDeleted { get; init; } = false;
 }

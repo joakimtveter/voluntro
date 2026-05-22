@@ -38,9 +38,4 @@ public interface IGroupService
     /// Restores a soft-deleted group. Returns <c>null</c> if not found or not currently deleted.
     /// </summary>
     Task<(GroupDto?, RestoreGroupResult)> RestoreAsync(Guid id, CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Adds a member to a group and auto-enrolls them in all ancestor groups.
-    /// </summary>
-    Task<AddMemberToGroupResult> AddMemberAsync(Guid groupId, Guid memberId, CancellationToken cancellationToken);
 }

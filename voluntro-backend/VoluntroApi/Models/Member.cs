@@ -59,4 +59,10 @@ public class Member
     [Required]
     public bool IsDeleted {get; set;}
 
+    public static string FormatFullName(string firstName, string? middleNames, string lastName) =>
+        string.IsNullOrWhiteSpace(middleNames)
+            ? $"{firstName} {lastName}"
+            : $"{firstName} {middleNames} {lastName}";
+
+    public string FullName => FormatFullName(FirstName, MiddleNames, LastName);
 }

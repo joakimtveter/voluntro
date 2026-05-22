@@ -29,6 +29,7 @@ builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IVenueService, VenueService>();
 builder.Services.AddScoped<IQueryService, QueryService>();
 builder.Services.AddScoped<IGroupService, GroupService>();
+builder.Services.AddScoped<IMembershipService, MembershipService>();
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>

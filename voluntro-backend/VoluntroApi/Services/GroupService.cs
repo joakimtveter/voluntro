@@ -178,66 +178,7 @@ public class GroupService(AppDbContext db, ILogger<GroupService> logger) : IGrou
         
         return DeleteGroupResult.Success;
     }
-
-    /// <inheritdoc/>
-    public async Task<AddMemberToGroupResult> AddMemberAsync(Guid groupId, Guid memberId, CancellationToken cancellationToken)
-    {
-        logger.LogDebug("Adding member MemberId={MemberId} to group GroupId={GroupId}", memberId, groupId);
-
-        var groupExists = await db.Groups.AnyAsync(g => g.Id == groupId && !g.IsDeleted, cancellationToken);
-        if (!groupExists)
-        {
-            logger.LogWarning("AddMember failed — group not found GroupId={GroupId}", groupId);
-            return AddMemberToGroupResult.GroupNotFound;
-        }
-
-        var memberExists = await db.Members.AnyAsync(m => m.Id == memberId && !m.IsDeleted, cancellationToken);
-        if (!memberExists)
-        {
-            logger.LogWarning("AddMember failed — member not found MemberId={MemberId}", memberId);
-            return AddMemberToGroupResult.MemberNotFound;
-        }
-
-        var alreadyMember = await db.MemberGroups.AnyAsync(mg => mg.GroupId == groupId && mg.MemberId == memberId, cancellationToken);
-        if (alreadyMember)
-        {
-            logger.LogWarning("AddMember failed — member MemberId={MemberId} is already in GroupId={GroupId}", memberId, groupId);
-            return AddMemberToGroupResult.AlreadyMember;
-        }
-
-        // Collect the target group and all its ancestors.
-        var groupsToEnroll = new List<Guid>();
-        var current = (Guid?)groupId;
-        while (current.HasValue)
-        {
-            groupsToEnroll.Add(current.Value);
-            current = await db.Groups
-                .AsNoTracking()
-                .Where(g => g.Id == current.Value)
-                .Select(g => g.ParentGroupId)
-                .FirstOrDefaultAsync(cancellationToken);
-        }
-
-        // Only insert rows that don't already exist (member may already be in ancestor groups).
-        var existingGroupIds = await db.MemberGroups
-            .Where(mg => mg.MemberId == memberId && groupsToEnroll.Contains(mg.GroupId))
-            .Select(mg => mg.GroupId)
-            .ToListAsync(cancellationToken);
-
-        var now = DateTimeOffset.UtcNow;
-        var newRows = groupsToEnroll
-            .Except(existingGroupIds)
-            .Select(gid => new MemberGroup { MemberId = memberId, GroupId = gid, JoinedAt = now });
-
-        db.MemberGroups.AddRange(newRows);
-        await db.SaveChangesAsync(cancellationToken);
-
-        logger.LogInformation("Member MemberId={MemberId} added to GroupId={GroupId} and {AncestorCount} ancestor group(s)",
-            memberId, groupId, groupsToEnroll.Count - 1);
-
-        return AddMemberToGroupResult.Success;
-    }
-
+    
     /// <inheritdoc/>
     public async Task<(GroupDto?, RestoreGroupResult)> RestoreAsync(Guid id, CancellationToken cancellationToken)
     {

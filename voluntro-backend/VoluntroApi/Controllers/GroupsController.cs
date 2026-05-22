@@ -4,7 +4,6 @@ using VoluntroApi.Services;
 
 namespace VoluntroApi.Controllers;
 
-/// <summary>Groups are collections of members, which can be nested to form a hierarchy.</summary>
 [ApiController]
 [Route("api/[controller]")]
 [Consumes("application/json")]
@@ -122,31 +121,6 @@ public class GroupsController(IGroupService groupService, ILogger<GroupsControll
         return Ok(group);
     }
 
-    /// <summary>Adds a member to a group, auto-enrolling them in all ancestor groups.</summary>
-    /// <param name="groupId">The group's unique identifier.</param>
-    /// <param name="request">The request body containing the member's ID.</param>
-    /// <param name="cancellationToken">Token to cancel the operation.</param>
-    [HttpPost("{groupId:guid}/members", Name = "AddMemberToGroup")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> AddMemberToGroup(
-        [FromRoute] Guid groupId, [FromBody] AddMemberToGroupRequest request, CancellationToken cancellationToken)
-    {
-        logger.LogDebug("Adding member MemberId={MemberId} to GroupId={GroupId}", request.MemberId, groupId);
-
-        var result = await groupService.AddMemberAsync(groupId, request.MemberId, cancellationToken);
-
-        return result switch
-        {
-            AddMemberToGroupResult.Success => NoContent(),
-            AddMemberToGroupResult.GroupNotFound => NotFound("Group not found"),
-            AddMemberToGroupResult.MemberNotFound => NotFound("Member not found"),
-            AddMemberToGroupResult.AlreadyMember => Conflict("Member is already in this group"),
-            _ => throw new Exception("Unexpected result from group service")
-        };
-    }
-
     /// <summary>
     /// Deletes a group by its unique identifier.
     /// </summary>
@@ -171,7 +145,7 @@ public class GroupsController(IGroupService groupService, ILogger<GroupsControll
         if (result == DeleteGroupResult.HasChildren)
         {
             logger.LogWarning("Group with Id {GroupId} has children and cannot be deleted", groupId);
-            return Conflict();
+            return Conflict("Group has children and cannot be deleted");
         }
         
         return result == DeleteGroupResult.Success ? NoContent() : throw new Exception("Unexpected result from group service");

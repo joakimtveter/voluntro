@@ -4,14 +4,14 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "#/shared/compon
 import { Textarea } from "#/shared/components/ui/textarea.tsx";
 import { useFieldContext } from "#/shared/hooks/form-context.tsx";
 
-type TextAreaProps = {
+type TextAreaFieldProps = {
   id?: string;
   label: string;
   helpText?: string;
   placeholder?: string;
 };
 
-export default function TextArea(props: TextAreaProps) {
+export default function TextAreaField(props: TextAreaFieldProps) {
   const { id: providedId, label, helpText, placeholder = "" } = props;
   const field = useFieldContext<string>();
 

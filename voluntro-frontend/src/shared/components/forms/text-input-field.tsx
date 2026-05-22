@@ -5,7 +5,7 @@ import { Input } from "#/shared/components/ui/input.tsx";
 import { useFieldContext } from "#/shared/hooks/form-context.tsx";
 import type { AutoCompleteTokens, TextFieldType } from "#/shared/types/form.types.ts";
 
-type TextFieldProps = {
+type TextInputFieldProps = {
   type?: TextFieldType;
   id?: string;
   label: string;
@@ -14,7 +14,7 @@ type TextFieldProps = {
   helpText?: string;
 };
 
-export default function TextField(props: TextFieldProps) {
+export default function TextInputField(props: TextInputFieldProps) {
   const {
     label,
     type = "text",

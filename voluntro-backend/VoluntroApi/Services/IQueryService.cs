@@ -20,4 +20,11 @@ public interface IQueryService
     /// <param name="query">Search term to filter groups by name.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<List<SelectOptionDto>> GetGroupOptions(string? query, CancellationToken cancellationToken);
+    
+    /// <summary>
+    /// Returns a list of members matching the search query, for use in select inputs.
+    /// </summary>
+    /// <param name="query">Search term to filter members by name.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<List<SelectOptionDto>> GetMemberOptions(string? query, CancellationToken cancellationToken);
 }

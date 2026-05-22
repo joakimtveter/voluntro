@@ -42,5 +42,21 @@ public class QueryController(IQueryService queryService,  ILogger<QueryControlle
     {
         var options = await queryService.GetGroupOptions(query, cancellationToken);
         return Ok(options);
+    }
+    
+    /// <summary>
+    /// Returns a list of members matching the search term, for use in select inputs.
+    /// </summary>
+    /// <param name="query">Search term to filter groups by name.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A list of matching group options.</returns>
+    [HttpGet("Members")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<SelectOptionDto>>> GetMemberOptions(
+        [FromQuery] string? query, 
+        CancellationToken cancellationToken)
+    {
+        var options = await queryService.GetMemberOptions(query, cancellationToken);
+        return Ok(options);
     }   
 }
