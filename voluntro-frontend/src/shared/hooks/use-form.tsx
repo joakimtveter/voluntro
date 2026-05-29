@@ -1,7 +1,7 @@
 import { createFormHook } from "@tanstack/react-form";
 
-import BirthdayPicker from "#/shared/components/forms/birthday-picker.tsx";
-import { DatetimePicker } from "#/shared/components/forms/datetime-picker.tsx";
+import BirthdayPickerField from "#/shared/components/forms/birthday-picker-field.tsx";
+import { DatetimePickerField } from "#/shared/components/forms/datetime-picker-field.tsx";
 import { FormActions, ResetButton, SubmitButton } from "#/shared/components/forms/form-actions.tsx";
 import GroupPickerField from "#/shared/components/forms/group-picker-field.tsx";
 import LegalGenderPickerField from "#/shared/components/forms/legal-gender-picker-field.tsx";
@@ -17,9 +17,9 @@ export const { useAppForm } = createFormHook({
   fieldComponents: {
     TextField: TextInputField,
     TextArea: TextAreaField,
-    DatetimePicker,
+    DatetimePicker: DatetimePickerField,
     VenuePicker: VenuePickerField,
-    BirthdayPicker,
+    BirthdayPicker: BirthdayPickerField,
     LegalGenderPicker: LegalGenderPickerField,
     GroupPicker: GroupPickerField,
     MemberPicker: MemberPickerField,

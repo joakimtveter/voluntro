@@ -10,13 +10,13 @@ namespace VoluntroApi.Controllers;
 [Route("api/[controller]")]
 [Consumes("application/json")]
 [Produces("application/json", "application/xml")]
-public class MembershipController(IMembershipService membershipService, ILogger<GroupsController> logger) : ControllerBase
+public class MembershipsController(IMembershipService membershipService, ILogger<GroupsController> logger) : ControllerBase
 {
     /// <summary>Returns a paginated list of members belonging to a group.</summary>
     /// <param name="groupId">The group's unique identifier.</param>
     /// <param name="query">Pagination parameters.</param>
     /// <param name="cancellationToken">Token to cancel the operation.</param>
-    [HttpGet("{groupId:guid}/Members", Name = "GetGroupMembers")]
+    [HttpGet("Groups/{groupId:guid}", Name = "GetGroupMembers")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<MemberBriefDto>> GetGroupMembers(
@@ -39,7 +39,7 @@ public class MembershipController(IMembershipService membershipService, ILogger<
     /// <param name="memberId">The member's unique identifier.</param>
     /// <param name="query">Pagination parameters.</param>
     /// <param name="cancellationToken">Token to cancel the operation.</param>
-    [HttpGet("{memberId:guid}/Groups", Name = "GetMemberGroups")]
+    [HttpGet("Member/{memberId:guid}", Name = "GetMemberGroups")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<GroupBriefDto>>> GetMemberGroups(
