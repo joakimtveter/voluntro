@@ -1,15 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertCircleIcon, PencilIcon } from "lucide-react";
 
-import AddMemberToGroupForm from "#/domains/groups/add-member-to-group.form.tsx";
-import { useGroupById, useGroupsMembers } from "#/domains/groups/use-groups.ts";
+import type { GroupBrief } from "#/domains/groups/group.types.ts";
+import { useGroupById } from "#/domains/groups/use-groups.ts";
+import AddMemberToGroupForm from "#/domains/membership/add-member-to-group.form.tsx";
+import { useGroupsMembers } from "#/domains/membership/use-membership.ts";
 import Heading from "#/shared/components/heading.tsx";
 import PageWrapper from "#/shared/components/page-wrapper.tsx";
 import { Alert, AlertDescription, AlertTitle } from "#/shared/components/ui/alert.tsx";
-import { Badge } from "#/shared/components/ui/badge";
+import { Badge } from "#/shared/components/ui/badge.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "#/shared/components/ui/card.tsx";
 import { LinkButton } from "#/shared/components/ui/link-button.tsx";
-import { Spinner } from "#/shared/components/ui/spinner";
+import { Spinner } from "#/shared/components/ui/spinner.tsx";
 import { formatDateTime } from "#/shared/lib/datetime.ts";
 import ErrorPage from "#/shared/pages/error-page.tsx";
 import LoadingPage from "#/shared/pages/loading-page.tsx";
@@ -52,7 +54,7 @@ function SingleGroupPage() {
         <section className="my-4 flex flex-col gap-3">
           <h2 className="text-lg font-semibold">Subgroups</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {group.childGroups.map((child) => (
+            {group.childGroups.map((child: GroupBrief) => (
               <LinkButton
                 key={child.id}
                 to="/groups/$groupId"

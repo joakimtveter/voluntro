@@ -19,7 +19,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "#/shared/components/ui/table";
+} from "#/shared/components/ui/table.tsx";
 import { formatDate } from "#/shared/lib/datetime.ts";
 import { formatName } from "#/shared/lib/formatName.ts";
 import ErrorPage from "#/shared/pages/error-page.tsx";

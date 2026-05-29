@@ -8,512 +8,512 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AboutRouteImport } from './routes/about'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as VenuesIndexRouteImport } from './routes/venues.index'
-import { Route as MembersIndexRouteImport } from './routes/members.index'
-import { Route as GroupsIndexRouteImport } from './routes/groups.index'
-import { Route as EventsIndexRouteImport } from './routes/events.index'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as VenuesAddRouteImport } from './routes/venues.add'
-import { Route as MembersAddRouteImport } from './routes/members.add'
-import { Route as GroupsAddRouteImport } from './routes/groups.add'
-import { Route as EventsAddRouteImport } from './routes/events.add'
-import { Route as AdminVenuesRouteImport } from './routes/admin.venues'
-import { Route as AdminMembersRouteImport } from './routes/admin.members'
-import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
-import { Route as AdminEventsRouteImport } from './routes/admin.events'
-import { Route as VenuesVenueIdIndexRouteImport } from './routes/venues.$venueId.index'
-import { Route as MembersMemberIdIndexRouteImport } from './routes/members.$memberId.index'
-import { Route as GroupsGroupIdIndexRouteImport } from './routes/groups.$groupId.index'
-import { Route as EventsEventIdIndexRouteImport } from './routes/events.$eventId.index'
-import { Route as VenuesVenueIdEditRouteImport } from './routes/venues.$venueId.edit'
-import { Route as MembersMemberIdEditRouteImport } from './routes/members.$memberId.edit'
-import { Route as GroupsGroupIdEditRouteImport } from './routes/groups.$groupId.edit'
-import { Route as EventsEventIdEditRouteImport } from './routes/events.$eventId.edit'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as AboutRouteImport } from "./routes/about";
+import { Route as AdminRouteImport } from "./routes/admin";
+import { Route as AdminIndexRouteImport } from "./routes/admin";
+import { Route as AdminEventsRouteImport } from "./routes/admin/events.tsx";
+import { Route as AdminGroupsRouteImport } from "./routes/admin/groups.tsx";
+import { Route as AdminMembersRouteImport } from "./routes/admin/members.tsx";
+import { Route as AdminVenuesRouteImport } from "./routes/admin/venues.tsx";
+import { Route as EventsIndexRouteImport } from "./routes/events";
+import { Route as EventsEventIdIndexRouteImport } from "./routes/events/$eventId";
+import { Route as EventsEventIdEditRouteImport } from "./routes/events/$eventId/edit.tsx";
+import { Route as EventsAddRouteImport } from "./routes/events/add.tsx";
+import { Route as GroupsIndexRouteImport } from "./routes/groups";
+import { Route as GroupsGroupIdIndexRouteImport } from "./routes/groups/$groupId";
+import { Route as GroupsGroupIdEditRouteImport } from "./routes/groups/$groupId/edit.tsx";
+import { Route as GroupsAddRouteImport } from "./routes/groups/add.tsx";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as MembersIndexRouteImport } from "./routes/members";
+import { Route as MembersMemberIdIndexRouteImport } from "./routes/members/$memberId";
+import { Route as MembersMemberIdEditRouteImport } from "./routes/members/$memberId/edit.tsx";
+import { Route as MembersAddRouteImport } from "./routes/members/add.tsx";
+import { Route as VenuesIndexRouteImport } from "./routes/venues";
+import { Route as VenuesVenueIdIndexRouteImport } from "./routes/venues/$venueId";
+import { Route as VenuesVenueIdEditRouteImport } from "./routes/venues/$venueId/edit.tsx";
+import { Route as VenuesAddRouteImport } from "./routes/venues/add.tsx";
 
 const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+  id: "/admin",
+  path: "/admin",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+  id: "/about",
+  path: "/about",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const VenuesIndexRoute = VenuesIndexRouteImport.update({
-  id: '/venues/',
-  path: '/venues/',
+  id: "/venues/",
+  path: "/venues/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const MembersIndexRoute = MembersIndexRouteImport.update({
-  id: '/members/',
-  path: '/members/',
+  id: "/members/",
+  path: "/members/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const GroupsIndexRoute = GroupsIndexRouteImport.update({
-  id: '/groups/',
-  path: '/groups/',
+  id: "/groups/",
+  path: "/groups/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const EventsIndexRoute = EventsIndexRouteImport.update({
-  id: '/events/',
-  path: '/events/',
+  id: "/events/",
+  path: "/events/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const VenuesAddRoute = VenuesAddRouteImport.update({
-  id: '/venues/add',
-  path: '/venues/add',
+  id: "/venues/add",
+  path: "/venues/add",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const MembersAddRoute = MembersAddRouteImport.update({
-  id: '/members/add',
-  path: '/members/add',
+  id: "/members/add",
+  path: "/members/add",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const GroupsAddRoute = GroupsAddRouteImport.update({
-  id: '/groups/add',
-  path: '/groups/add',
+  id: "/groups/add",
+  path: "/groups/add",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const EventsAddRoute = EventsAddRouteImport.update({
-  id: '/events/add',
-  path: '/events/add',
+  id: "/events/add",
+  path: "/events/add",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AdminVenuesRoute = AdminVenuesRouteImport.update({
-  id: '/venues',
-  path: '/venues',
+  id: "/venues",
+  path: "/venues",
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminMembersRoute = AdminMembersRouteImport.update({
-  id: '/members',
-  path: '/members',
+  id: "/members",
+  path: "/members",
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminGroupsRoute = AdminGroupsRouteImport.update({
-  id: '/groups',
-  path: '/groups',
+  id: "/groups",
+  path: "/groups",
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminEventsRoute = AdminEventsRouteImport.update({
-  id: '/events',
-  path: '/events',
+  id: "/events",
+  path: "/events",
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const VenuesVenueIdIndexRoute = VenuesVenueIdIndexRouteImport.update({
-  id: '/venues/$venueId/',
-  path: '/venues/$venueId/',
+  id: "/venues/$venueId/",
+  path: "/venues/$venueId/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const MembersMemberIdIndexRoute = MembersMemberIdIndexRouteImport.update({
-  id: '/members/$memberId/',
-  path: '/members/$memberId/',
+  id: "/members/$memberId/",
+  path: "/members/$memberId/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const GroupsGroupIdIndexRoute = GroupsGroupIdIndexRouteImport.update({
-  id: '/groups/$groupId/',
-  path: '/groups/$groupId/',
+  id: "/groups/$groupId/",
+  path: "/groups/$groupId/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const EventsEventIdIndexRoute = EventsEventIdIndexRouteImport.update({
-  id: '/events/$eventId/',
-  path: '/events/$eventId/',
+  id: "/events/$eventId/",
+  path: "/events/$eventId/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const VenuesVenueIdEditRoute = VenuesVenueIdEditRouteImport.update({
-  id: '/venues/$venueId/edit',
-  path: '/venues/$venueId/edit',
+  id: "/venues/$venueId/edit",
+  path: "/venues/$venueId/edit",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const MembersMemberIdEditRoute = MembersMemberIdEditRouteImport.update({
-  id: '/members/$memberId/edit',
-  path: '/members/$memberId/edit',
+  id: "/members/$memberId/edit",
+  path: "/members/$memberId/edit",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const GroupsGroupIdEditRoute = GroupsGroupIdEditRouteImport.update({
-  id: '/groups/$groupId/edit',
-  path: '/groups/$groupId/edit',
+  id: "/groups/$groupId/edit",
+  path: "/groups/$groupId/edit",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const EventsEventIdEditRoute = EventsEventIdEditRouteImport.update({
-  id: '/events/$eventId/edit',
-  path: '/events/$eventId/edit',
+  id: "/events/$eventId/edit",
+  path: "/events/$eventId/edit",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/admin': typeof AdminRouteWithChildren
-  '/admin/events': typeof AdminEventsRoute
-  '/admin/groups': typeof AdminGroupsRoute
-  '/admin/members': typeof AdminMembersRoute
-  '/admin/venues': typeof AdminVenuesRoute
-  '/events/add': typeof EventsAddRoute
-  '/groups/add': typeof GroupsAddRoute
-  '/members/add': typeof MembersAddRoute
-  '/venues/add': typeof VenuesAddRoute
-  '/admin/': typeof AdminIndexRoute
-  '/events/': typeof EventsIndexRoute
-  '/groups/': typeof GroupsIndexRoute
-  '/members/': typeof MembersIndexRoute
-  '/venues/': typeof VenuesIndexRoute
-  '/events/$eventId/edit': typeof EventsEventIdEditRoute
-  '/groups/$groupId/edit': typeof GroupsGroupIdEditRoute
-  '/members/$memberId/edit': typeof MembersMemberIdEditRoute
-  '/venues/$venueId/edit': typeof VenuesVenueIdEditRoute
-  '/events/$eventId/': typeof EventsEventIdIndexRoute
-  '/groups/$groupId/': typeof GroupsGroupIdIndexRoute
-  '/members/$memberId/': typeof MembersMemberIdIndexRoute
-  '/venues/$venueId/': typeof VenuesVenueIdIndexRoute
+  "/": typeof IndexRoute;
+  "/about": typeof AboutRoute;
+  "/admin": typeof AdminRouteWithChildren;
+  "/admin/events": typeof AdminEventsRoute;
+  "/admin/groups": typeof AdminGroupsRoute;
+  "/admin/members": typeof AdminMembersRoute;
+  "/admin/venues": typeof AdminVenuesRoute;
+  "/events/add": typeof EventsAddRoute;
+  "/groups/add": typeof GroupsAddRoute;
+  "/members/add": typeof MembersAddRoute;
+  "/venues/add": typeof VenuesAddRoute;
+  "/admin/": typeof AdminIndexRoute;
+  "/events/": typeof EventsIndexRoute;
+  "/groups/": typeof GroupsIndexRoute;
+  "/members/": typeof MembersIndexRoute;
+  "/venues/": typeof VenuesIndexRoute;
+  "/events/$eventId/edit": typeof EventsEventIdEditRoute;
+  "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute;
+  "/members/$memberId/edit": typeof MembersMemberIdEditRoute;
+  "/venues/$venueId/edit": typeof VenuesVenueIdEditRoute;
+  "/events/$eventId/": typeof EventsEventIdIndexRoute;
+  "/groups/$groupId/": typeof GroupsGroupIdIndexRoute;
+  "/members/$memberId/": typeof MembersMemberIdIndexRoute;
+  "/venues/$venueId/": typeof VenuesVenueIdIndexRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/admin/events': typeof AdminEventsRoute
-  '/admin/groups': typeof AdminGroupsRoute
-  '/admin/members': typeof AdminMembersRoute
-  '/admin/venues': typeof AdminVenuesRoute
-  '/events/add': typeof EventsAddRoute
-  '/groups/add': typeof GroupsAddRoute
-  '/members/add': typeof MembersAddRoute
-  '/venues/add': typeof VenuesAddRoute
-  '/admin': typeof AdminIndexRoute
-  '/events': typeof EventsIndexRoute
-  '/groups': typeof GroupsIndexRoute
-  '/members': typeof MembersIndexRoute
-  '/venues': typeof VenuesIndexRoute
-  '/events/$eventId/edit': typeof EventsEventIdEditRoute
-  '/groups/$groupId/edit': typeof GroupsGroupIdEditRoute
-  '/members/$memberId/edit': typeof MembersMemberIdEditRoute
-  '/venues/$venueId/edit': typeof VenuesVenueIdEditRoute
-  '/events/$eventId': typeof EventsEventIdIndexRoute
-  '/groups/$groupId': typeof GroupsGroupIdIndexRoute
-  '/members/$memberId': typeof MembersMemberIdIndexRoute
-  '/venues/$venueId': typeof VenuesVenueIdIndexRoute
+  "/": typeof IndexRoute;
+  "/about": typeof AboutRoute;
+  "/admin/events": typeof AdminEventsRoute;
+  "/admin/groups": typeof AdminGroupsRoute;
+  "/admin/members": typeof AdminMembersRoute;
+  "/admin/venues": typeof AdminVenuesRoute;
+  "/events/add": typeof EventsAddRoute;
+  "/groups/add": typeof GroupsAddRoute;
+  "/members/add": typeof MembersAddRoute;
+  "/venues/add": typeof VenuesAddRoute;
+  "/admin": typeof AdminIndexRoute;
+  "/events": typeof EventsIndexRoute;
+  "/groups": typeof GroupsIndexRoute;
+  "/members": typeof MembersIndexRoute;
+  "/venues": typeof VenuesIndexRoute;
+  "/events/$eventId/edit": typeof EventsEventIdEditRoute;
+  "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute;
+  "/members/$memberId/edit": typeof MembersMemberIdEditRoute;
+  "/venues/$venueId/edit": typeof VenuesVenueIdEditRoute;
+  "/events/$eventId": typeof EventsEventIdIndexRoute;
+  "/groups/$groupId": typeof GroupsGroupIdIndexRoute;
+  "/members/$memberId": typeof MembersMemberIdIndexRoute;
+  "/venues/$venueId": typeof VenuesVenueIdIndexRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/admin': typeof AdminRouteWithChildren
-  '/admin/events': typeof AdminEventsRoute
-  '/admin/groups': typeof AdminGroupsRoute
-  '/admin/members': typeof AdminMembersRoute
-  '/admin/venues': typeof AdminVenuesRoute
-  '/events/add': typeof EventsAddRoute
-  '/groups/add': typeof GroupsAddRoute
-  '/members/add': typeof MembersAddRoute
-  '/venues/add': typeof VenuesAddRoute
-  '/admin/': typeof AdminIndexRoute
-  '/events/': typeof EventsIndexRoute
-  '/groups/': typeof GroupsIndexRoute
-  '/members/': typeof MembersIndexRoute
-  '/venues/': typeof VenuesIndexRoute
-  '/events/$eventId/edit': typeof EventsEventIdEditRoute
-  '/groups/$groupId/edit': typeof GroupsGroupIdEditRoute
-  '/members/$memberId/edit': typeof MembersMemberIdEditRoute
-  '/venues/$venueId/edit': typeof VenuesVenueIdEditRoute
-  '/events/$eventId/': typeof EventsEventIdIndexRoute
-  '/groups/$groupId/': typeof GroupsGroupIdIndexRoute
-  '/members/$memberId/': typeof MembersMemberIdIndexRoute
-  '/venues/$venueId/': typeof VenuesVenueIdIndexRoute
+  __root__: typeof rootRouteImport;
+  "/": typeof IndexRoute;
+  "/about": typeof AboutRoute;
+  "/admin": typeof AdminRouteWithChildren;
+  "/admin/events": typeof AdminEventsRoute;
+  "/admin/groups": typeof AdminGroupsRoute;
+  "/admin/members": typeof AdminMembersRoute;
+  "/admin/venues": typeof AdminVenuesRoute;
+  "/events/add": typeof EventsAddRoute;
+  "/groups/add": typeof GroupsAddRoute;
+  "/members/add": typeof MembersAddRoute;
+  "/venues/add": typeof VenuesAddRoute;
+  "/admin/": typeof AdminIndexRoute;
+  "/events/": typeof EventsIndexRoute;
+  "/groups/": typeof GroupsIndexRoute;
+  "/members/": typeof MembersIndexRoute;
+  "/venues/": typeof VenuesIndexRoute;
+  "/events/$eventId/edit": typeof EventsEventIdEditRoute;
+  "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute;
+  "/members/$memberId/edit": typeof MembersMemberIdEditRoute;
+  "/venues/$venueId/edit": typeof VenuesVenueIdEditRoute;
+  "/events/$eventId/": typeof EventsEventIdIndexRoute;
+  "/groups/$groupId/": typeof GroupsGroupIdIndexRoute;
+  "/members/$memberId/": typeof MembersMemberIdIndexRoute;
+  "/venues/$venueId/": typeof VenuesVenueIdIndexRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
-    | '/'
-    | '/about'
-    | '/admin'
-    | '/admin/events'
-    | '/admin/groups'
-    | '/admin/members'
-    | '/admin/venues'
-    | '/events/add'
-    | '/groups/add'
-    | '/members/add'
-    | '/venues/add'
-    | '/admin/'
-    | '/events/'
-    | '/groups/'
-    | '/members/'
-    | '/venues/'
-    | '/events/$eventId/edit'
-    | '/groups/$groupId/edit'
-    | '/members/$memberId/edit'
-    | '/venues/$venueId/edit'
-    | '/events/$eventId/'
-    | '/groups/$groupId/'
-    | '/members/$memberId/'
-    | '/venues/$venueId/'
-  fileRoutesByTo: FileRoutesByTo
+    | "/"
+    | "/about"
+    | "/admin"
+    | "/admin/events"
+    | "/admin/groups"
+    | "/admin/members"
+    | "/admin/venues"
+    | "/events/add"
+    | "/groups/add"
+    | "/members/add"
+    | "/venues/add"
+    | "/admin/"
+    | "/events/"
+    | "/groups/"
+    | "/members/"
+    | "/venues/"
+    | "/events/$eventId/edit"
+    | "/groups/$groupId/edit"
+    | "/members/$memberId/edit"
+    | "/venues/$venueId/edit"
+    | "/events/$eventId/"
+    | "/groups/$groupId/"
+    | "/members/$memberId/"
+    | "/venues/$venueId/";
+  fileRoutesByTo: FileRoutesByTo;
   to:
-    | '/'
-    | '/about'
-    | '/admin/events'
-    | '/admin/groups'
-    | '/admin/members'
-    | '/admin/venues'
-    | '/events/add'
-    | '/groups/add'
-    | '/members/add'
-    | '/venues/add'
-    | '/admin'
-    | '/events'
-    | '/groups'
-    | '/members'
-    | '/venues'
-    | '/events/$eventId/edit'
-    | '/groups/$groupId/edit'
-    | '/members/$memberId/edit'
-    | '/venues/$venueId/edit'
-    | '/events/$eventId'
-    | '/groups/$groupId'
-    | '/members/$memberId'
-    | '/venues/$venueId'
+    | "/"
+    | "/about"
+    | "/admin/events"
+    | "/admin/groups"
+    | "/admin/members"
+    | "/admin/venues"
+    | "/events/add"
+    | "/groups/add"
+    | "/members/add"
+    | "/venues/add"
+    | "/admin"
+    | "/events"
+    | "/groups"
+    | "/members"
+    | "/venues"
+    | "/events/$eventId/edit"
+    | "/groups/$groupId/edit"
+    | "/members/$memberId/edit"
+    | "/venues/$venueId/edit"
+    | "/events/$eventId"
+    | "/groups/$groupId"
+    | "/members/$memberId"
+    | "/venues/$venueId";
   id:
-    | '__root__'
-    | '/'
-    | '/about'
-    | '/admin'
-    | '/admin/events'
-    | '/admin/groups'
-    | '/admin/members'
-    | '/admin/venues'
-    | '/events/add'
-    | '/groups/add'
-    | '/members/add'
-    | '/venues/add'
-    | '/admin/'
-    | '/events/'
-    | '/groups/'
-    | '/members/'
-    | '/venues/'
-    | '/events/$eventId/edit'
-    | '/groups/$groupId/edit'
-    | '/members/$memberId/edit'
-    | '/venues/$venueId/edit'
-    | '/events/$eventId/'
-    | '/groups/$groupId/'
-    | '/members/$memberId/'
-    | '/venues/$venueId/'
-  fileRoutesById: FileRoutesById
+    | "__root__"
+    | "/"
+    | "/about"
+    | "/admin"
+    | "/admin/events"
+    | "/admin/groups"
+    | "/admin/members"
+    | "/admin/venues"
+    | "/events/add"
+    | "/groups/add"
+    | "/members/add"
+    | "/venues/add"
+    | "/admin/"
+    | "/events/"
+    | "/groups/"
+    | "/members/"
+    | "/venues/"
+    | "/events/$eventId/edit"
+    | "/groups/$groupId/edit"
+    | "/members/$memberId/edit"
+    | "/venues/$venueId/edit"
+    | "/events/$eventId/"
+    | "/groups/$groupId/"
+    | "/members/$memberId/"
+    | "/venues/$venueId/";
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
-  AdminRoute: typeof AdminRouteWithChildren
-  EventsAddRoute: typeof EventsAddRoute
-  GroupsAddRoute: typeof GroupsAddRoute
-  MembersAddRoute: typeof MembersAddRoute
-  VenuesAddRoute: typeof VenuesAddRoute
-  EventsIndexRoute: typeof EventsIndexRoute
-  GroupsIndexRoute: typeof GroupsIndexRoute
-  MembersIndexRoute: typeof MembersIndexRoute
-  VenuesIndexRoute: typeof VenuesIndexRoute
-  EventsEventIdEditRoute: typeof EventsEventIdEditRoute
-  GroupsGroupIdEditRoute: typeof GroupsGroupIdEditRoute
-  MembersMemberIdEditRoute: typeof MembersMemberIdEditRoute
-  VenuesVenueIdEditRoute: typeof VenuesVenueIdEditRoute
-  EventsEventIdIndexRoute: typeof EventsEventIdIndexRoute
-  GroupsGroupIdIndexRoute: typeof GroupsGroupIdIndexRoute
-  MembersMemberIdIndexRoute: typeof MembersMemberIdIndexRoute
-  VenuesVenueIdIndexRoute: typeof VenuesVenueIdIndexRoute
+  IndexRoute: typeof IndexRoute;
+  AboutRoute: typeof AboutRoute;
+  AdminRoute: typeof AdminRouteWithChildren;
+  EventsAddRoute: typeof EventsAddRoute;
+  GroupsAddRoute: typeof GroupsAddRoute;
+  MembersAddRoute: typeof MembersAddRoute;
+  VenuesAddRoute: typeof VenuesAddRoute;
+  EventsIndexRoute: typeof EventsIndexRoute;
+  GroupsIndexRoute: typeof GroupsIndexRoute;
+  MembersIndexRoute: typeof MembersIndexRoute;
+  VenuesIndexRoute: typeof VenuesIndexRoute;
+  EventsEventIdEditRoute: typeof EventsEventIdEditRoute;
+  GroupsGroupIdEditRoute: typeof GroupsGroupIdEditRoute;
+  MembersMemberIdEditRoute: typeof MembersMemberIdEditRoute;
+  VenuesVenueIdEditRoute: typeof VenuesVenueIdEditRoute;
+  EventsEventIdIndexRoute: typeof EventsEventIdIndexRoute;
+  GroupsGroupIdIndexRoute: typeof GroupsGroupIdIndexRoute;
+  MembersMemberIdIndexRoute: typeof MembersMemberIdIndexRoute;
+  VenuesVenueIdIndexRoute: typeof VenuesVenueIdIndexRoute;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/venues/': {
-      id: '/venues/'
-      path: '/venues'
-      fullPath: '/venues/'
-      preLoaderRoute: typeof VenuesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/members/': {
-      id: '/members/'
-      path: '/members'
-      fullPath: '/members/'
-      preLoaderRoute: typeof MembersIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/groups/': {
-      id: '/groups/'
-      path: '/groups'
-      fullPath: '/groups/'
-      preLoaderRoute: typeof GroupsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/events/': {
-      id: '/events/'
-      path: '/events'
-      fullPath: '/events/'
-      preLoaderRoute: typeof EventsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/venues/add': {
-      id: '/venues/add'
-      path: '/venues/add'
-      fullPath: '/venues/add'
-      preLoaderRoute: typeof VenuesAddRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/members/add': {
-      id: '/members/add'
-      path: '/members/add'
-      fullPath: '/members/add'
-      preLoaderRoute: typeof MembersAddRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/groups/add': {
-      id: '/groups/add'
-      path: '/groups/add'
-      fullPath: '/groups/add'
-      preLoaderRoute: typeof GroupsAddRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/events/add': {
-      id: '/events/add'
-      path: '/events/add'
-      fullPath: '/events/add'
-      preLoaderRoute: typeof EventsAddRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/venues': {
-      id: '/admin/venues'
-      path: '/venues'
-      fullPath: '/admin/venues'
-      preLoaderRoute: typeof AdminVenuesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/members': {
-      id: '/admin/members'
-      path: '/members'
-      fullPath: '/admin/members'
-      preLoaderRoute: typeof AdminMembersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/groups': {
-      id: '/admin/groups'
-      path: '/groups'
-      fullPath: '/admin/groups'
-      preLoaderRoute: typeof AdminGroupsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/events': {
-      id: '/admin/events'
-      path: '/events'
-      fullPath: '/admin/events'
-      preLoaderRoute: typeof AdminEventsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/venues/$venueId/': {
-      id: '/venues/$venueId/'
-      path: '/venues/$venueId'
-      fullPath: '/venues/$venueId/'
-      preLoaderRoute: typeof VenuesVenueIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/members/$memberId/': {
-      id: '/members/$memberId/'
-      path: '/members/$memberId'
-      fullPath: '/members/$memberId/'
-      preLoaderRoute: typeof MembersMemberIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/groups/$groupId/': {
-      id: '/groups/$groupId/'
-      path: '/groups/$groupId'
-      fullPath: '/groups/$groupId/'
-      preLoaderRoute: typeof GroupsGroupIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/events/$eventId/': {
-      id: '/events/$eventId/'
-      path: '/events/$eventId'
-      fullPath: '/events/$eventId/'
-      preLoaderRoute: typeof EventsEventIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/venues/$venueId/edit': {
-      id: '/venues/$venueId/edit'
-      path: '/venues/$venueId/edit'
-      fullPath: '/venues/$venueId/edit'
-      preLoaderRoute: typeof VenuesVenueIdEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/members/$memberId/edit': {
-      id: '/members/$memberId/edit'
-      path: '/members/$memberId/edit'
-      fullPath: '/members/$memberId/edit'
-      preLoaderRoute: typeof MembersMemberIdEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/groups/$groupId/edit': {
-      id: '/groups/$groupId/edit'
-      path: '/groups/$groupId/edit'
-      fullPath: '/groups/$groupId/edit'
-      preLoaderRoute: typeof GroupsGroupIdEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/events/$eventId/edit': {
-      id: '/events/$eventId/edit'
-      path: '/events/$eventId/edit'
-      fullPath: '/events/$eventId/edit'
-      preLoaderRoute: typeof EventsEventIdEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+    "/admin": {
+      id: "/admin";
+      path: "/admin";
+      fullPath: "/admin";
+      preLoaderRoute: typeof AdminRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/about": {
+      id: "/about";
+      path: "/about";
+      fullPath: "/about";
+      preLoaderRoute: typeof AboutRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/venues/": {
+      id: "/venues/";
+      path: "/venues";
+      fullPath: "/venues/";
+      preLoaderRoute: typeof VenuesIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/members/": {
+      id: "/members/";
+      path: "/members";
+      fullPath: "/members/";
+      preLoaderRoute: typeof MembersIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/groups/": {
+      id: "/groups/";
+      path: "/groups";
+      fullPath: "/groups/";
+      preLoaderRoute: typeof GroupsIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/events/": {
+      id: "/events/";
+      path: "/events";
+      fullPath: "/events/";
+      preLoaderRoute: typeof EventsIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/admin/": {
+      id: "/admin/";
+      path: "/";
+      fullPath: "/admin/";
+      preLoaderRoute: typeof AdminIndexRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
+    "/venues/add": {
+      id: "/venues/add";
+      path: "/venues/add";
+      fullPath: "/venues/add";
+      preLoaderRoute: typeof VenuesAddRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/members/add": {
+      id: "/members/add";
+      path: "/members/add";
+      fullPath: "/members/add";
+      preLoaderRoute: typeof MembersAddRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/groups/add": {
+      id: "/groups/add";
+      path: "/groups/add";
+      fullPath: "/groups/add";
+      preLoaderRoute: typeof GroupsAddRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/events/add": {
+      id: "/events/add";
+      path: "/events/add";
+      fullPath: "/events/add";
+      preLoaderRoute: typeof EventsAddRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/admin/venues": {
+      id: "/admin/venues";
+      path: "/venues";
+      fullPath: "/admin/venues";
+      preLoaderRoute: typeof AdminVenuesRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
+    "/admin/members": {
+      id: "/admin/members";
+      path: "/members";
+      fullPath: "/admin/members";
+      preLoaderRoute: typeof AdminMembersRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
+    "/admin/groups": {
+      id: "/admin/groups";
+      path: "/groups";
+      fullPath: "/admin/groups";
+      preLoaderRoute: typeof AdminGroupsRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
+    "/admin/events": {
+      id: "/admin/events";
+      path: "/events";
+      fullPath: "/admin/events";
+      preLoaderRoute: typeof AdminEventsRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
+    "/venues/$venueId/": {
+      id: "/venues/$venueId/";
+      path: "/venues/$venueId";
+      fullPath: "/venues/$venueId/";
+      preLoaderRoute: typeof VenuesVenueIdIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/members/$memberId/": {
+      id: "/members/$memberId/";
+      path: "/members/$memberId";
+      fullPath: "/members/$memberId/";
+      preLoaderRoute: typeof MembersMemberIdIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/groups/$groupId/": {
+      id: "/groups/$groupId/";
+      path: "/groups/$groupId";
+      fullPath: "/groups/$groupId/";
+      preLoaderRoute: typeof GroupsGroupIdIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/events/$eventId/": {
+      id: "/events/$eventId/";
+      path: "/events/$eventId";
+      fullPath: "/events/$eventId/";
+      preLoaderRoute: typeof EventsEventIdIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/venues/$venueId/edit": {
+      id: "/venues/$venueId/edit";
+      path: "/venues/$venueId/edit";
+      fullPath: "/venues/$venueId/edit";
+      preLoaderRoute: typeof VenuesVenueIdEditRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/members/$memberId/edit": {
+      id: "/members/$memberId/edit";
+      path: "/members/$memberId/edit";
+      fullPath: "/members/$memberId/edit";
+      preLoaderRoute: typeof MembersMemberIdEditRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/groups/$groupId/edit": {
+      id: "/groups/$groupId/edit";
+      path: "/groups/$groupId/edit";
+      fullPath: "/groups/$groupId/edit";
+      preLoaderRoute: typeof GroupsGroupIdEditRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/events/$eventId/edit": {
+      id: "/events/$eventId/edit";
+      path: "/events/$eventId/edit";
+      fullPath: "/events/$eventId/edit";
+      preLoaderRoute: typeof EventsEventIdEditRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
 interface AdminRouteChildren {
-  AdminEventsRoute: typeof AdminEventsRoute
-  AdminGroupsRoute: typeof AdminGroupsRoute
-  AdminMembersRoute: typeof AdminMembersRoute
-  AdminVenuesRoute: typeof AdminVenuesRoute
-  AdminIndexRoute: typeof AdminIndexRoute
+  AdminEventsRoute: typeof AdminEventsRoute;
+  AdminGroupsRoute: typeof AdminGroupsRoute;
+  AdminMembersRoute: typeof AdminMembersRoute;
+  AdminVenuesRoute: typeof AdminVenuesRoute;
+  AdminIndexRoute: typeof AdminIndexRoute;
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -522,9 +522,9 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminMembersRoute: AdminMembersRoute,
   AdminVenuesRoute: AdminVenuesRoute,
   AdminIndexRoute: AdminIndexRoute,
-}
+};
 
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren);
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -546,16 +546,17 @@ const rootRouteChildren: RootRouteChildren = {
   GroupsGroupIdIndexRoute: GroupsGroupIdIndexRoute,
   MembersMemberIdIndexRoute: MembersMemberIdIndexRoute,
   VenuesVenueIdIndexRoute: VenuesVenueIdIndexRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
 
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
+import type { createStart } from "@tanstack/react-start";
+
+import type { getRouter } from "./router.tsx";
+declare module "@tanstack/react-start" {
   interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
+    ssr: true;
+    router: Awaited<ReturnType<typeof getRouter>>;
   }
 }

@@ -73,7 +73,7 @@ function isoFromParts(parts: Parts): string {
   return format(date, DATE_FORMAT);
 }
 
-export default function BirthdayPicker(props: BirthdayPickerProps) {
+export default function BirthdayPickerField(props: BirthdayPickerProps) {
   const { label, id: providedId, className, helpText } = props;
 
   const field = useFieldContext<string>();

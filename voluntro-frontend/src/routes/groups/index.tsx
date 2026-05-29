@@ -13,6 +13,7 @@ import { useGroups, useGroupsQueryOptions } from "#/domains/groups/use-groups.ts
 import PageWrapper from "#/shared/components/page-wrapper.tsx";
 import { IconLinkButton } from "#/shared/components/ui/icon-link-button.tsx";
 import { LinkButton } from "#/shared/components/ui/link-button.tsx";
+import { TablePagination } from "#/shared/components/ui/table-pagination.tsx";
 import {
   Table,
   TableBody,
@@ -20,8 +21,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "#/shared/components/ui/table";
-import { TablePagination } from "#/shared/components/ui/table-pagination.tsx";
+} from "#/shared/components/ui/table.tsx";
 import { SITE_TITLE } from "#/shared/constants/constants.ts";
 import ErrorPage from "#/shared/pages/error-page.tsx";
 import LoadingPage from "#/shared/pages/loading-page.tsx";

@@ -37,7 +37,7 @@ function combineDateTime(date: Date | undefined, time: string): string {
   return `${format(date, DATE_FORMAT)}T${time || "00:00"}`;
 }
 
-export function DatetimePicker(props: DatePickerTimeProps) {
+export function DatetimePickerField(props: DatePickerTimeProps) {
   const { id: providedId, timeLabel = "Time", dateLabel = "Date", description, label } = props;
   const field = useFieldContext<string>();
   const [open, setOpen] = useState(false);

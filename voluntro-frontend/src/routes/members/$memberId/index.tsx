@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PencilIcon } from "lucide-react";
 
-import { useMemberById, useMemberGroups } from "#/domains/members/use-members.ts";
+import { useMemberById } from "#/domains/members/use-members.ts";
+import { useMemberGroups } from "#/domains/membership/use-membership.ts";
 import PageWrapper from "#/shared/components/page-wrapper.tsx";
 import { LinkButton } from "#/shared/components/ui/link-button.tsx";
 import { formatName } from "#/shared/lib/formatName.ts";

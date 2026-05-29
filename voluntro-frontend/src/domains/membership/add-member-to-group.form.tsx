@@ -1,16 +1,8 @@
-import * as z from "zod";
-
-import { useAddMemberToGroup } from "#/domains/groups/use-groups.ts";
+import { membershipFormValidationSchema } from "#/domains/membership/membership.schema.ts";
+import { useAddMembership } from "#/domains/membership/use-membership.ts";
 import Form from "#/shared/components/forms/form.tsx";
-import { Button } from "#/shared/components/ui/button";
+import { Button } from "#/shared/components/ui/button.tsx";
 import { useAppForm } from "#/shared/hooks/use-form.tsx";
-
-const formValidationSchema = z.object({
-  memberId: z.uuid(),
-});
-
-export type AddMemberToGroupFormValues = z.input<typeof formValidationSchema>;
-export type AddMemberToGroupPayload = z.output<typeof formValidationSchema>;
 
 type AddMemberToGroupFormProps = {
   groupId: string;
@@ -19,14 +11,13 @@ type AddMemberToGroupFormProps = {
 
 export default function AddMemberToGroupForm(props: AddMemberToGroupFormProps) {
   const { groupId, filterMemberIds } = props;
-  const { mutate } = useAddMemberToGroup(groupId);
+  const { mutate } = useAddMembership();
 
   const form = useAppForm({
-    validators: {
-      onSubmit: formValidationSchema,
-    },
+    defaultValues: { groupId, memberId: "" },
+    validators: { onSubmit: membershipFormValidationSchema },
     onSubmit: ({ value }) => {
-      const payload = formValidationSchema.parse(value);
+      const payload = membershipFormValidationSchema.parse(value);
       mutate(payload, { onSuccess: () => form.reset() });
     },
   });
