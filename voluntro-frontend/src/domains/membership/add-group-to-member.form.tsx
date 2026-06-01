@@ -5,12 +5,19 @@ import { Button } from "#/shared/components/ui/button";
 import { useAppForm } from "#/shared/hooks/use-form.tsx";
 
 type AddGroupToMemberFormProps = {
+  label?: string;
+  placeholder?: string;
   memberId: string;
   filterGroupIds: string[];
 };
 
 export default function AddGroupToMemberForm(props: AddGroupToMemberFormProps) {
-  const { memberId, filterGroupIds = [] } = props;
+  const {
+    label = "Add group",
+    placeholder = "Select group",
+    memberId,
+    filterGroupIds = [],
+  } = props;
   const { mutate } = useAddMembership();
 
   const form = useAppForm({
@@ -32,7 +39,13 @@ export default function AddGroupToMemberForm(props: AddGroupToMemberFormProps) {
       <div className="flex items-center gap-3">
         <form.AppField
           name="groupId"
-          children={(field) => <field.GroupPicker filterGroupIds={filterGroupIds} />}
+          children={(field) => (
+            <field.GroupPicker
+              label={label}
+              placeholder={placeholder}
+              filterGroupIds={filterGroupIds}
+            />
+          )}
         />
         <Button type="submit" className="mt-4">
           Add member

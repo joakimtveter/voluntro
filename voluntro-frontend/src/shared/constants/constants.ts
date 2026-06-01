@@ -1,4 +1,4 @@
-export const SITE_TITLE = "HolyCRM";
+export const SITE_TITLE = "Voluntro CRM";
 export const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];

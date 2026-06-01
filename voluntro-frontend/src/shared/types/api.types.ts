@@ -8,6 +8,11 @@ export type Pagination = {
   pageSize: number;
 };
 
+export type MinimalReference = {
+  id: string;
+  name: string;
+};
+
 export type QueryOptions = {
   staleTime: number;
 };

@@ -25,7 +25,7 @@ export default function EventList(props: EventListProps) {
 }
 
 function EventCard({ event }: { event: EventBrief }) {
-  const sameDay = event.eventStart.slice(0, 10) === event.eventEnd.slice(0, 10);
+  const sameDay = event.startsAt.slice(0, 10) === event.endsAt.slice(0, 10);
 
   return (
     <Link
@@ -41,12 +41,12 @@ function EventCard({ event }: { event: EventBrief }) {
         <span className="flex items-center gap-1">
           <CalendarIcon className="size-3.5" />
           {sameDay
-            ? formatDate(event.eventStart, "long")
-            : `${formatDate(event.eventStart, "long")} – ${formatDate(event.eventEnd, "long")}`}
+            ? formatDate(event.startsAt, "long")
+            : `${formatDate(event.startsAt, "long")} – ${formatDate(event.endsAt, "long")}`}
         </span>
         <span className="flex items-center gap-1">
           <ClockIcon className="size-3.5" />
-          {formatTime(event.eventStart)} – {formatTime(event.eventEnd)}
+          {formatTime(event.startsAt)} – {formatTime(event.endsAt)}
         </span>
       </div>
     </Link>

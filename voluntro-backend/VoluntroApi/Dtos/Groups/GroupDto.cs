@@ -1,3 +1,5 @@
+using VoluntroApi.Dtos.Shared;
+
 namespace VoluntroApi.Dtos.Groups;
 
 /// <summary>
@@ -17,4 +19,7 @@ public class GroupDto : GroupBriefDto
 
     /// <summary>Number of active (non-deleted) members currently in this group.</summary>
     public int MemberCount { get; init; }
+
+    /// <summary>Ancestor chain ordered from root to immediate parent, for use as breadcrumbs.</summary>
+    public IReadOnlyList<MinimalReference> Ancestors { get; init; } = [];
 }

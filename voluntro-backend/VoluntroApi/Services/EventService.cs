@@ -70,6 +70,7 @@ public class EventService(AppDbContext db, ILogger<EventService> logger) : IEven
             Description = request.Description,
             StartsAt = request.StartsAt,
             EndsAt = request.EndsAt,
+            VenueId = request.VenueId,
         };
 
         db.Events.Add(newEvent);

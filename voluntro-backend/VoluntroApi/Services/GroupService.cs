@@ -39,15 +39,12 @@ public class GroupService(AppDbContext db, ILogger<GroupService> logger) : IGrou
     {
         logger.LogDebug("Querying group GroupId={GroupId} IncludeDeleted={IncludeDeleted}", id, includeDeleted);
 
-        return await db.Groups
+        var data = await db.Groups
             .AsNoTracking()
             .Where(g => g.Id == id && (includeDeleted || !g.IsDeleted))
-            .Select(g => new GroupDto
+            .Select(g => new
             {
-                Id = g.Id,
-                Name = g.Name,
-                Description = g.Description,
-                ParentGroupId = g.ParentGroupId,
+                g.Id, g.Name, g.Description, g.ParentGroupId,
                 ParentGroupName = g.ParentGroup != null ? g.ParentGroup.Name : null,
                 ChildGroups = g.ChildGroups
                     .Where(c => !c.IsDeleted)
@@ -62,11 +59,48 @@ public class GroupService(AppDbContext db, ILogger<GroupService> logger) : IGrou
                     })
                     .ToList(),
                 MemberCount = g.MemberGroups.Count(mg => !mg.Member.IsDeleted),
-                CreatedAt = g.CreatedAt,
-                UpdatedAt = g.UpdatedAt,
-                IsDeleted = g.IsDeleted,
+                g.CreatedAt, g.UpdatedAt, g.IsDeleted,
             })
             .FirstOrDefaultAsync(cancellationToken);
+
+        if (data is null) return null;
+
+        var ancestors = await BuildAncestorChainAsync(data.ParentGroupId, cancellationToken);
+
+        return new GroupDto
+        {
+            Id = data.Id,
+            Name = data.Name,
+            Description = data.Description,
+            ParentGroupId = data.ParentGroupId,
+            ParentGroupName = data.ParentGroupName,
+            ChildGroups = data.ChildGroups,
+            MemberCount = data.MemberCount,
+            CreatedAt = data.CreatedAt,
+            UpdatedAt = data.UpdatedAt,
+            IsDeleted = data.IsDeleted,
+            Ancestors = ancestors,
+        };
+    }
+
+    private async Task<IReadOnlyList<MinimalReference>> BuildAncestorChainAsync(Guid? parentId, CancellationToken cancellationToken)
+    {
+        var ancestors = new List<MinimalReference>();
+        var current = parentId;
+        while (current.HasValue)
+        {
+            var parent = await db.Groups
+                .AsNoTracking()
+                .Where(g => g.Id == current.Value && !g.IsDeleted)
+                .Select(g => new { g.Id, g.Name, g.ParentGroupId })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (parent is null) break;
+
+            ancestors.Insert(0, new MinimalReference { Id = parent.Id, Name = parent.Name });
+            current = parent.ParentGroupId;
+        }
+        return ancestors;
     }
 
     /// <inheritdoc/>

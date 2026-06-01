@@ -16,7 +16,7 @@ public class MembershipsController(IMembershipService membershipService, ILogger
     /// <param name="groupId">The group's unique identifier.</param>
     /// <param name="query">Pagination parameters.</param>
     /// <param name="cancellationToken">Token to cancel the operation.</param>
-    [HttpGet("Groups/{groupId:guid}", Name = "GetGroupMembers")]
+    [HttpGet("Group/{groupId:guid}", Name = "GetGroupMembers")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<MemberBriefDto>> GetGroupMembers(

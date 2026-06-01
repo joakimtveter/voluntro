@@ -1,11 +1,8 @@
-using System.Text.Json.Serialization;
-
 namespace VoluntroApi.Dtos.Members;
 
 /// <summary>
 /// Gender of a member
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum LegalGender
 {
     /// <summary>

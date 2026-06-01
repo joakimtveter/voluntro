@@ -1,18 +1,49 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { AlertCircleIcon, PencilIcon } from "lucide-react";
+import { Fragment } from "react";
 
-import type { GroupBrief } from "#/domains/groups/group.types.ts";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { AlertCircleIcon, PencilIcon, Trash2Icon } from "lucide-react";
+
+import type { GroupAncestor, GroupBrief } from "#/domains/groups/group.types.ts";
 import { useGroupById } from "#/domains/groups/use-groups.ts";
 import AddMemberToGroupForm from "#/domains/membership/add-member-to-group.form.tsx";
-import { useGroupsMembers } from "#/domains/membership/use-membership.ts";
+import { useGroupsMembers, useRemoveMembership } from "#/domains/membership/use-membership.ts";
 import Heading from "#/shared/components/heading.tsx";
 import PageWrapper from "#/shared/components/page-wrapper.tsx";
 import { Alert, AlertDescription, AlertTitle } from "#/shared/components/ui/alert.tsx";
 import { Badge } from "#/shared/components/ui/badge.tsx";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "#/shared/components/ui/breadcrumb.tsx";
 import { Card, CardContent, CardHeader, CardTitle } from "#/shared/components/ui/card.tsx";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "#/shared/components/ui/alert-dialog.tsx";
+import { Button } from "#/shared/components/ui/button.tsx";
 import { LinkButton } from "#/shared/components/ui/link-button.tsx";
 import { Spinner } from "#/shared/components/ui/spinner.tsx";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "#/shared/components/ui/table.tsx";
 import { formatDateTime } from "#/shared/lib/datetime.ts";
+import { formatName } from "#/shared/lib/formatName.ts";
 import ErrorPage from "#/shared/pages/error-page.tsx";
 import LoadingPage from "#/shared/pages/loading-page.tsx";
 
@@ -23,6 +54,7 @@ export const Route = createFileRoute("/groups/$groupId/")({
 function SingleGroupPage() {
   const { groupId } = Route.useParams();
   const { data: group, isPending, isError, error } = useGroupById(groupId);
+  const { mutate: removeMembership } = useRemoveMembership();
   const {
     data,
     isPending: isMembersPending,
@@ -35,6 +67,31 @@ function SingleGroupPage() {
 
   return (
     <PageWrapper
+      breadcrumbs={
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink render={<Link to="/groups" />}>Groups</BreadcrumbLink>
+            </BreadcrumbItem>
+            {group.ancestors.map((ancestor: GroupAncestor) => (
+              <Fragment key={ancestor.id}>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink
+                    render={<Link to="/groups/$groupId" params={{ groupId: ancestor.id }} />}
+                  >
+                    {ancestor.name}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </Fragment>
+            ))}
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{group.name}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      }
       title={`Group: ${group.name}`}
       subTitle={
         group.createdAt === group.updatedAt
@@ -89,7 +146,62 @@ function SingleGroupPage() {
             <AlertDescription>{membersError.name}</AlertDescription>
           </Alert>
         )}
-        <pre>{JSON.stringify(data, null, 2)}</pre>
+        {data && data.items.length > 0 && (
+          <Table className="mt-3">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.items.map((member) => (
+                <TableRow key={member.id}>
+                  <TableCell>
+                    <Link
+                      to="/members/$memberId"
+                      params={{ memberId: member.id }}
+                      className="hover:underline"
+                    >
+                      {formatName(member.firstName, member.middleNames, member.lastName)}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <AlertDialog>
+                      <AlertDialogTrigger
+                        render={<Button variant="ghost" size="sm" />}
+                      >
+                        <Trash2Icon />
+                        Remove
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Remove member from group</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Remove{" "}
+                            <span className="font-medium text-foreground">
+                              {formatName(member.firstName, member.middleNames, member.lastName)}
+                            </span>{" "}
+                            from{" "}
+                            <span className="font-medium text-foreground">{group.name}</span>?
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => removeMembership({ groupId, memberId: member.id })}
+                          >
+                            Remove
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
         <AddMemberToGroupForm
           groupId={groupId}
           filterMemberIds={data?.items.map((m) => m.id) ?? []}

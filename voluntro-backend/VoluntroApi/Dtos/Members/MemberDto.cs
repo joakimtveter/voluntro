@@ -31,6 +31,11 @@ public class MemberBriefDto
     public DateOnly? DateOfBirth { get; init; }
 
     /// <summary>
+    /// Age in years derived from DateOfBirth, or null if DateOfBirth is unknown.
+    /// </summary>
+    public int? Age => DateOfBirth.HasValue ? CalculateAge(DateOfBirth.Value) : null;
+
+    /// <summary>
     /// Gender of the member.
     /// </summary>
     public LegalGender LegalGender { get; init; }
@@ -49,6 +54,14 @@ public class MemberBriefDto
     /// Indicates whether the member has been soft-deleted.
     /// </summary>
     public bool IsDeleted { get; init; }
+
+    private static int CalculateAge(DateOnly birthDate)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var age = today.Year - birthDate.Year;
+        if (birthDate > today.AddYears(-age)) age--;
+        return age;
+    }
 }
 
 /// <inheritdoc />
