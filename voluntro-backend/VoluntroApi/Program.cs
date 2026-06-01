@@ -47,7 +47,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/openapi/v1.json", "HolyCRM API v1");
+        options.SwaggerEndpoint("/openapi/v1.json", "Voluntro CRM API v1");
     });
 }
 
