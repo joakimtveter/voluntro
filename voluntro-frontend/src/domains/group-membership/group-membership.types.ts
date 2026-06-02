@@ -1,4 +1,4 @@
-export type MembershipResponse = {
+export type GroupMembershipResponse = {
   groupId: string;
   memberId: string;
 };

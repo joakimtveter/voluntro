@@ -1,25 +1,16 @@
-import { Fragment } from "react";
-
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertCircleIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import { Fragment } from "react";
 
+import AddMemberToGroupForm from "#/domains/group-membership/add-member-to-group.form.tsx";
+import {
+  useGroupsMembers,
+  useRemoveMembership,
+} from "#/domains/group-membership/use-group-membership.ts";
 import type { GroupAncestor, GroupBrief } from "#/domains/groups/group.types.ts";
 import { useGroupById } from "#/domains/groups/use-groups.ts";
-import AddMemberToGroupForm from "#/domains/membership/add-member-to-group.form.tsx";
-import { useGroupsMembers, useRemoveMembership } from "#/domains/membership/use-membership.ts";
 import Heading from "#/shared/components/heading.tsx";
 import PageWrapper from "#/shared/components/page-wrapper.tsx";
-import { Alert, AlertDescription, AlertTitle } from "#/shared/components/ui/alert.tsx";
-import { Badge } from "#/shared/components/ui/badge.tsx";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "#/shared/components/ui/breadcrumb.tsx";
-import { Card, CardContent, CardHeader, CardTitle } from "#/shared/components/ui/card.tsx";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +22,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "#/shared/components/ui/alert-dialog.tsx";
+import { Alert, AlertDescription, AlertTitle } from "#/shared/components/ui/alert.tsx";
+import { Badge } from "#/shared/components/ui/badge.tsx";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "#/shared/components/ui/breadcrumb.tsx";
 import { Button } from "#/shared/components/ui/button.tsx";
+import { Card, CardContent, CardHeader, CardTitle } from "#/shared/components/ui/card.tsx";
 import { LinkButton } from "#/shared/components/ui/link-button.tsx";
 import { Spinner } from "#/shared/components/ui/spinner.tsx";
 import {
@@ -168,9 +170,7 @@ function SingleGroupPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <AlertDialog>
-                      <AlertDialogTrigger
-                        render={<Button variant="ghost" size="sm" />}
-                      >
+                      <AlertDialogTrigger render={<Button variant="ghost" size="sm" />}>
                         <Trash2Icon />
                         Remove
                       </AlertDialogTrigger>
@@ -179,11 +179,10 @@ function SingleGroupPage() {
                           <AlertDialogTitle>Remove member from group</AlertDialogTitle>
                           <AlertDialogDescription>
                             Remove{" "}
-                            <span className="font-medium text-foreground">
+                            <span className="text-foreground font-medium">
                               {formatName(member.firstName, member.middleNames, member.lastName)}
                             </span>{" "}
-                            from{" "}
-                            <span className="font-medium text-foreground">{group.name}</span>?
+                            from <span className="text-foreground font-medium">{group.name}</span>?
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

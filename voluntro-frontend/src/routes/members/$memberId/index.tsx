@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PencilIcon } from "lucide-react";
 
+import AddGroupToMemberForm from "#/domains/group-membership/add-group-to-member.form.tsx";
+import { useMemberGroups } from "#/domains/group-membership/use-group-membership.ts";
 import type { GroupBrief } from "#/domains/groups/group.types.ts";
 import { useMemberById } from "#/domains/members/use-members.ts";
-import AddGroupToMemberForm from "#/domains/membership/add-group-to-member.form.tsx";
-import { useMemberGroups } from "#/domains/membership/use-membership.ts";
 import Heading from "#/shared/components/heading.tsx";
 import PageWrapper from "#/shared/components/page-wrapper.tsx";
 import { Badge } from "#/shared/components/ui/badge.tsx";
