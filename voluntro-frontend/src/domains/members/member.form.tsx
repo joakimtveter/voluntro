@@ -1,4 +1,4 @@
-import { LegalGender } from "#/domains/members/member.types.ts";
+import { LegalGender, type LegalGenderEnum } from "#/domains/members/member.types.ts";
 import {
   memberFormValidationSchema,
   type MemberFormValues,
@@ -23,7 +23,7 @@ export default function MemberForm(props: MemberFormProps) {
       middleNames: defaultValues?.middleNames ?? "",
       lastName: defaultValues?.lastName ?? "",
       dateOfBirth: defaultValues?.dateOfBirth ?? "",
-      legalGender: defaultValues?.legalGender ?? LegalGender.unknown,
+      legalGender: (defaultValues?.legalGender?.toLowerCase() as LegalGenderEnum | undefined) ?? LegalGender.unknown,
     },
     validators: {
       onSubmit: memberFormValidationSchema,
@@ -76,7 +76,7 @@ export default function MemberForm(props: MemberFormProps) {
           name="dateOfBirth"
           children={(field) => <field.BirthdayPicker label="Date of birth" />}
         />
-        <form.AppField name="legalGender" children={(field) => <field.LegalGenderPickerField />} />
+        <form.AppField name="legalGender" children={(field) => <field.LegalGenderPicker />} />
         <form.FormActions>
           <form.ResetButton />
           <form.SubmitButton>{memberId ? "Update member" : "Create member"}</form.SubmitButton>

@@ -10,34 +10,32 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as VenuesIndexRouteImport } from './routes/venues.index'
-import { Route as MembersIndexRouteImport } from './routes/members.index'
-import { Route as GroupsIndexRouteImport } from './routes/groups.index'
-import { Route as EventsIndexRouteImport } from './routes/events.index'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as VenuesAddRouteImport } from './routes/venues.add'
-import { Route as MembersAddRouteImport } from './routes/members.add'
-import { Route as GroupsAddRouteImport } from './routes/groups.add'
-import { Route as EventsAddRouteImport } from './routes/events.add'
-import { Route as VenuesVenueIdIndexRouteImport } from './routes/venues.$venueId.index'
-import { Route as MembersMemberIdIndexRouteImport } from './routes/members.$memberId.index'
-import { Route as GroupsGroupIdIndexRouteImport } from './routes/groups.$groupId.index'
-import { Route as EventsEventIdIndexRouteImport } from './routes/events.$eventId.index'
-import { Route as VenuesVenueIdEditRouteImport } from './routes/venues.$venueId.edit'
-import { Route as MembersMemberIdEditRouteImport } from './routes/members.$memberId.edit'
-import { Route as GroupsGroupIdEditRouteImport } from './routes/groups.$groupId.edit'
-import { Route as EventsEventIdEditRouteImport } from './routes/events.$eventId.edit'
+import { Route as VenuesIndexRouteImport } from './routes/venues/index'
+import { Route as MembersIndexRouteImport } from './routes/members/index'
+import { Route as GroupsIndexRouteImport } from './routes/groups/index'
+import { Route as EventsIndexRouteImport } from './routes/events/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as VenuesAddRouteImport } from './routes/venues/add'
+import { Route as MembersAddRouteImport } from './routes/members/add'
+import { Route as GroupsAddRouteImport } from './routes/groups/add'
+import { Route as EventsAddRouteImport } from './routes/events/add'
+import { Route as AdminVenuesRouteImport } from './routes/admin/venues'
+import { Route as AdminMembersRouteImport } from './routes/admin/members'
+import { Route as AdminGroupsRouteImport } from './routes/admin/groups'
+import { Route as AdminEventsRouteImport } from './routes/admin/events'
+import { Route as VenuesVenueIdIndexRouteImport } from './routes/venues/$venueId/index'
+import { Route as MembersMemberIdIndexRouteImport } from './routes/members/$memberId/index'
+import { Route as GroupsGroupIdIndexRouteImport } from './routes/groups/$groupId/index'
+import { Route as EventsEventIdIndexRouteImport } from './routes/events/$eventId/index'
+import { Route as VenuesVenueIdEditRouteImport } from './routes/venues/$venueId/edit'
+import { Route as MembersMemberIdEditRouteImport } from './routes/members/$memberId/edit'
+import { Route as GroupsGroupIdEditRouteImport } from './routes/groups/$groupId/edit'
+import { Route as EventsEventIdEditRouteImport } from './routes/events/$eventId/edit'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -90,6 +88,26 @@ const EventsAddRoute = EventsAddRouteImport.update({
   path: '/events/add',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminVenuesRoute = AdminVenuesRouteImport.update({
+  id: '/venues',
+  path: '/venues',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMembersRoute = AdminMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGroupsRoute = AdminGroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEventsRoute = AdminEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => AdminRoute,
+} as any)
 const VenuesVenueIdIndexRoute = VenuesVenueIdIndexRouteImport.update({
   id: '/venues/$venueId/',
   path: '/venues/$venueId/',
@@ -133,8 +151,11 @@ const EventsEventIdEditRoute = EventsEventIdEditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin/events': typeof AdminEventsRoute
+  '/admin/groups': typeof AdminGroupsRoute
+  '/admin/members': typeof AdminMembersRoute
+  '/admin/venues': typeof AdminVenuesRoute
   '/events/add': typeof EventsAddRoute
   '/groups/add': typeof GroupsAddRoute
   '/members/add': typeof MembersAddRoute
@@ -155,7 +176,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/admin/events': typeof AdminEventsRoute
+  '/admin/groups': typeof AdminGroupsRoute
+  '/admin/members': typeof AdminMembersRoute
+  '/admin/venues': typeof AdminVenuesRoute
   '/events/add': typeof EventsAddRoute
   '/groups/add': typeof GroupsAddRoute
   '/members/add': typeof MembersAddRoute
@@ -177,8 +201,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin/events': typeof AdminEventsRoute
+  '/admin/groups': typeof AdminGroupsRoute
+  '/admin/members': typeof AdminMembersRoute
+  '/admin/venues': typeof AdminVenuesRoute
   '/events/add': typeof EventsAddRoute
   '/groups/add': typeof GroupsAddRoute
   '/members/add': typeof MembersAddRoute
@@ -201,8 +228,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/about'
     | '/admin'
+    | '/admin/events'
+    | '/admin/groups'
+    | '/admin/members'
+    | '/admin/venues'
     | '/events/add'
     | '/groups/add'
     | '/members/add'
@@ -223,7 +253,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/about'
+    | '/admin/events'
+    | '/admin/groups'
+    | '/admin/members'
+    | '/admin/venues'
     | '/events/add'
     | '/groups/add'
     | '/members/add'
@@ -244,8 +277,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/about'
     | '/admin'
+    | '/admin/events'
+    | '/admin/groups'
+    | '/admin/members'
+    | '/admin/venues'
     | '/events/add'
     | '/groups/add'
     | '/members/add'
@@ -267,7 +303,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRouteWithChildren
   EventsAddRoute: typeof EventsAddRoute
   GroupsAddRoute: typeof GroupsAddRoute
@@ -294,13 +329,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -373,6 +401,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsAddRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/venues': {
+      id: '/admin/venues'
+      path: '/venues'
+      fullPath: '/admin/venues'
+      preLoaderRoute: typeof AdminVenuesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/members': {
+      id: '/admin/members'
+      path: '/members'
+      fullPath: '/admin/members'
+      preLoaderRoute: typeof AdminMembersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/groups': {
+      id: '/admin/groups'
+      path: '/groups'
+      fullPath: '/admin/groups'
+      preLoaderRoute: typeof AdminGroupsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events': {
+      id: '/admin/events'
+      path: '/events'
+      fullPath: '/admin/events'
+      preLoaderRoute: typeof AdminEventsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/venues/$venueId/': {
       id: '/venues/$venueId/'
       path: '/venues/$venueId'
@@ -433,10 +489,18 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminEventsRoute: typeof AdminEventsRoute
+  AdminGroupsRoute: typeof AdminGroupsRoute
+  AdminMembersRoute: typeof AdminMembersRoute
+  AdminVenuesRoute: typeof AdminVenuesRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminEventsRoute: AdminEventsRoute,
+  AdminGroupsRoute: AdminGroupsRoute,
+  AdminMembersRoute: AdminMembersRoute,
+  AdminVenuesRoute: AdminVenuesRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
@@ -444,7 +508,6 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
   AdminRoute: AdminRouteWithChildren,
   EventsAddRoute: EventsAddRoute,
   GroupsAddRoute: GroupsAddRoute,

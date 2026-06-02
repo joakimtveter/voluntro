@@ -61,7 +61,9 @@ export default function GroupForm(props: GroupFormProps) {
         />
         <form.AppField
           name="parentGroupId"
-          children={(field) => <field.GroupPickerField groupId={groupId} />}
+          children={(field) => (
+            <field.GroupPicker filterGroupIds={groupId ? [groupId] : undefined} />
+          )}
         />
         <form.FormActions>
           <form.SubmitButton />

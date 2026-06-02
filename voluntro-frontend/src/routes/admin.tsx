@@ -1,45 +1,15 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-import { AdminSidebar } from "#/shared/components/admin-sidebar.tsx";
-import SiteFooter from "#/shared/components/site-footer.tsx";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "#/shared/components/ui/breadcrumb.tsx";
-import { Separator } from "#/shared/components/ui/separator.tsx";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "#/shared/components/ui/sidebar.tsx";
+import { AdminLayout } from "#/shared/components/admin-layout.tsx";
 
 export const Route = createFileRoute("/admin")({
-  component: RouteComponent,
+  component: AdminLayoutRouteComponent,
 });
 
-function RouteComponent() {
+function AdminLayoutRouteComponent() {
   return (
-    <SidebarProvider contained>
-      <AdminSidebar contained />
-      <SidebarInset className="overflow-y-auto">
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="#">Build Your Application</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </header>
-        <Outlet />
-        <SiteFooter />
-      </SidebarInset>
-    </SidebarProvider>
+    <AdminLayout>
+      <Outlet />
+    </AdminLayout>
   );
 }

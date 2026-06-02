@@ -3,10 +3,10 @@ import { toast } from "sonner";
 
 import type { Member, MemberBrief } from "#/domains/members/member.types.ts";
 import type { MemberPayload } from "#/domains/members/members.schema.ts";
-import { ALL_MEMBERS, SINGLE_MEMBER } from "#/shared/constants/query-keys.ts";
+import { ALL_MEMBERS, MEMBER_QUERY, SINGLE_MEMBER } from "#/shared/constants/query-keys.ts";
 import type { ApiError } from "#/shared/lib/fetch/api-error.ts";
 import { apiFetch } from "#/shared/lib/fetch/api-fetch.ts";
-import type { PaginatedList, Pagination } from "#/shared/types/api.types.ts";
+import type { PaginatedList, Pagination, SelectOption } from "#/shared/types/api.types.ts";
 
 async function getMembers(pagination: Pagination) {
   return await apiFetch<PaginatedList<MemberBrief>>("/members", { query: pagination });
@@ -74,5 +74,15 @@ export function useUpdateMember(memberId: string) {
     onError: (error: ApiError) => {
       toast.error("Unable to update member", { description: error.responseBody });
     },
+  });
+}
+
+async function memberComboboxQuery(query: string) {
+  return await apiFetch<SelectOption[]>(`/query/members?${query}`);
+}
+export function useMemberComboboxQuery(query: string) {
+  return useQuery({
+    queryKey: [ALL_MEMBERS, MEMBER_QUERY, query],
+    queryFn: () => memberComboboxQuery(query),
   });
 }

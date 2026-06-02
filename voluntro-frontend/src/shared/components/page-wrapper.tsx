@@ -7,12 +7,14 @@ type PageWrapperProps = {
   subTitle?: string;
   children?: ReactNode | ReactNode[];
   actions?: ReactNode | ReactNode[];
+  breadcrumbs?: ReactNode;
 };
 
 export default function PageWrapper(props: PageWrapperProps) {
-  const { title, subTitle, children, actions } = props;
+  const { title, subTitle, children, actions, breadcrumbs } = props;
   return (
     <main className="m-auto w-full px-8 py-6">
+      {breadcrumbs && <div className="mb-3">{breadcrumbs}</div>}
       <div className="mb-2 flex items-center justify-between">
         <hgroup>
           <Heading level={1} size="xl">
