@@ -1,0 +1,238 @@
+using Microsoft.EntityFrameworkCore;
+using VoluntroApi.Data;
+using VoluntroApi.Dtos.Groups;
+using VoluntroApi.Dtos.Shared;
+using VoluntroApi.Models;
+
+namespace VoluntroApi.Services;
+
+/// <summary>
+/// EF Core-backed implementation of <see cref="IGroupService"/>.
+/// </summary>
+public class GroupService(AppDbContext db, ILogger<GroupService> logger) : IGroupService
+{
+    /// <inheritdoc/>
+    public async Task<PagedResult<GroupBriefDto>> GetAllAsync(GetGroupsQuery query, 
+        CancellationToken cancellationToken, bool includeDeleted = false)
+    {
+        logger.LogDebug("Querying groups Page={Page} PageSize={PageSize} IncludeDeleted={IncludeDeleted}", query.Page, query.PageSize, includeDeleted);
+        
+        return await db.Groups
+            .AsNoTracking()
+            .Where(g => !query.ParentGroupId.HasValue || g.ParentGroupId == query.ParentGroupId)
+            .Where(g => includeDeleted || !g.IsDeleted )
+            .OrderBy(g => g.ParentGroupId)
+            .ThenBy(g => g.Name)
+            .ToPagedResultAsync(g => new GroupBriefDto
+            {
+                Id = g.Id,
+                Name = g.Name,
+                ParentGroupId = g.ParentGroupId,
+                CreatedAt = g.CreatedAt,
+                UpdatedAt = g.UpdatedAt,
+                IsDeleted = g.IsDeleted
+            }, query.Page, query.PageSize, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<GroupDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken, bool includeDeleted)
+    {
+        logger.LogDebug("Querying group GroupId={GroupId} IncludeDeleted={IncludeDeleted}", id, includeDeleted);
+
+        var data = await db.Groups
+            .AsNoTracking()
+            .Where(g => g.Id == id && (includeDeleted || !g.IsDeleted))
+            .Select(g => new
+            {
+                g.Id, g.Name, g.Description, g.ParentGroupId,
+                ParentGroupName = g.ParentGroup != null ? g.ParentGroup.Name : null,
+                ChildGroups = g.ChildGroups
+                    .Where(c => !c.IsDeleted)
+                    .Select(c => new GroupBriefDto
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        ParentGroupId = c.ParentGroupId,
+                        CreatedAt = c.CreatedAt,
+                        UpdatedAt = c.UpdatedAt,
+                        IsDeleted = c.IsDeleted,
+                    })
+                    .ToList(),
+                MemberCount = g.MemberGroups.Count(mg => !mg.Member.IsDeleted),
+                g.CreatedAt, g.UpdatedAt, g.IsDeleted,
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (data is null) return null;
+
+        var ancestors = await BuildAncestorChainAsync(data.ParentGroupId, cancellationToken);
+
+        return new GroupDto
+        {
+            Id = data.Id,
+            Name = data.Name,
+            Description = data.Description,
+            ParentGroupId = data.ParentGroupId,
+            ParentGroupName = data.ParentGroupName,
+            ChildGroups = data.ChildGroups,
+            MemberCount = data.MemberCount,
+            CreatedAt = data.CreatedAt,
+            UpdatedAt = data.UpdatedAt,
+            IsDeleted = data.IsDeleted,
+            Ancestors = ancestors,
+        };
+    }
+
+    private async Task<IReadOnlyList<MinimalReference>> BuildAncestorChainAsync(Guid? parentId, CancellationToken cancellationToken)
+    {
+        var ancestors = new List<MinimalReference>();
+        var current = parentId;
+        while (current.HasValue)
+        {
+            var parent = await db.Groups
+                .AsNoTracking()
+                .Where(g => g.Id == current.Value && !g.IsDeleted)
+                .Select(g => new { g.Id, g.Name, g.ParentGroupId })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (parent is null) break;
+
+            ancestors.Insert(0, new MinimalReference { Id = parent.Id, Name = parent.Name });
+            current = parent.ParentGroupId;
+        }
+        return ancestors;
+    }
+
+    /// <inheritdoc/>
+    public async Task<GroupDto?> CreateAsync(CreateGroupRequest request, CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Creating group Name={Name}", request.Name);
+
+        if (request.ParentGroupId.HasValue)
+        {
+            var parentExists = await db.Groups
+                .AnyAsync(g => g.Id == request.ParentGroupId && !g.IsDeleted, cancellationToken);
+
+            if (!parentExists)
+            {
+                logger.LogWarning("Create failed — parent group not found ParentGroupId={ParentGroupId}", request.ParentGroupId);
+                return null;
+            }
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var group = new Group
+        {
+            Name = request.Name.Trim(),
+            Description = request.Description?.Trim(),
+            ParentGroupId = request.ParentGroupId,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+
+        db.Groups.Add(group);
+        await db.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Group created GroupId={GroupId}", group.Id);
+        return await GetByIdAsync(group.Id, cancellationToken, includeDeleted: false);
+    }
+
+    /// <inheritdoc/>
+    public async Task<(GroupDto?, UpdateGroupResult)> UpdateAsync(Guid id, UpdateGroupRequest request, CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Updating group GroupId={GroupId}", id);
+
+        var group = await db.Groups.FindAsync([id], cancellationToken);
+
+        if (group is null || group.IsDeleted)
+        {
+            logger.LogWarning("Update failed — group not found GroupId={GroupId}", id);
+            return (null, UpdateGroupResult.NotFound);
+        }
+
+        if (request.ParentGroupId.HasValue)
+        {
+            if (request.ParentGroupId == id || await WouldCreateCycleAsync(id, request.ParentGroupId.Value, cancellationToken))
+            {
+                logger.LogWarning("Update failed — re-parenting would create a cycle GroupId={GroupId} ProposedParentId={ProposedParentId}", id, request.ParentGroupId);
+                return (null, UpdateGroupResult.CycleDetected);
+            }
+
+            var parentExists = await db.Groups
+                .AnyAsync(g => g.Id == request.ParentGroupId && !g.IsDeleted, cancellationToken);
+
+            if (!parentExists)
+            {
+                logger.LogWarning("Update failed — parent group not found ParentGroupId={ParentGroupId}", request.ParentGroupId);
+                return (null, UpdateGroupResult.ParentNotFound);
+            }
+        }
+
+        group.Name = request.Name.Trim();
+        group.Description = request.Description?.Trim();
+        group.ParentGroupId = request.ParentGroupId;
+        group.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Group updated GroupId={GroupId}", id);
+        return (await GetByIdAsync(id, cancellationToken, includeDeleted: false), UpdateGroupResult.Success);
+    }
+
+    private async Task<bool> WouldCreateCycleAsync(Guid groupId, Guid proposedParentId, CancellationToken cancellationToken)
+    {
+        var current = (Guid?)proposedParentId;
+        while (current.HasValue)
+        {
+            if (current == groupId) return true;
+            current = await db.Groups
+                .AsNoTracking()
+                .Where(g => g.Id == current.Value)
+                .Select(g => g.ParentGroupId)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+        return false;
+    }
+    
+    /// <inheritdoc/>
+    public async Task<DeleteGroupResult> DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var groupToDelete = await db.Groups.FindAsync([id], cancellationToken);
+        if (groupToDelete is null) return DeleteGroupResult.NotFound;
+        
+        var hasChildren = await db.Groups
+            .AnyAsync(g => g.ParentGroupId == id && !g.IsDeleted, cancellationToken);
+
+        if (hasChildren) return DeleteGroupResult.HasChildren;
+        
+        groupToDelete.IsDeleted = true;
+        groupToDelete.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        await db.SaveChangesAsync(cancellationToken);
+        
+        return DeleteGroupResult.Success;
+    }
+    
+    /// <inheritdoc/>
+    public async Task<(GroupDto?, RestoreGroupResult)> RestoreAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var groupToRestore = await db.Groups.FindAsync([id], cancellationToken);
+        if (groupToRestore is null) return (null, RestoreGroupResult.NotFound);
+        if (!groupToRestore.IsDeleted) return (null, RestoreGroupResult.AlreadyRestored);
+
+        if (groupToRestore.ParentGroupId.HasValue)
+        {
+            var parentExists = await db.Groups
+                .AnyAsync(g => g.Id == groupToRestore.ParentGroupId && !g.IsDeleted, cancellationToken);
+
+            if (!parentExists) return (null, RestoreGroupResult.ParentDoesNotExist);
+        }
+        
+        groupToRestore.IsDeleted = false;
+        groupToRestore.UpdatedAt = DateTimeOffset.UtcNow;
+        
+        await db.SaveChangesAsync(cancellationToken);
+
+        return (await GetByIdAsync(id, cancellationToken, false), RestoreGroupResult.Success);
+    }
+}

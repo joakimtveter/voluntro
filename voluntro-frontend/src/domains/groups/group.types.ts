@@ -1,3 +1,5 @@
+import type { MinimalReference } from "#/shared/types/api.types.ts";
+
 export type GroupBrief = {
   id: string;
   name: string;
@@ -12,4 +14,5 @@ export type Group = {
   description: string;
   childGroups: GroupBrief[];
   memberCount: number;
+  ancestors: MinimalReference[];
 } & GroupBrief;

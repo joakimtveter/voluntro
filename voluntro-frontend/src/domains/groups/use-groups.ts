@@ -85,7 +85,7 @@ export function useUpdateGroup(groupId: string) {
 async function deleteGroup(groupId: string) {
   return await apiFetch<void>(`/groups/${groupId}`, { method: "DELETE" });
 }
-export function useDeleteEvent(groupId: string) {
+export function useDeleteGroup(groupId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ["delete-group", groupId],
@@ -110,7 +110,7 @@ export function useDeleteEvent(groupId: string) {
 async function groupComboboxQuery(query: string) {
   return await apiFetch<SelectOption[]>(`/query/groups?${query}`);
 }
-export function useGroupQuery(query: string) {
+export function useGroupComboboxQuery(query: string) {
   return useQuery({
     queryKey: [ALL_GROUPS, GROUP_QUERY, query],
     queryFn: () => groupComboboxQuery(query),
