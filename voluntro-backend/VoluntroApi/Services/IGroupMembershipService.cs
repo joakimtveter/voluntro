@@ -8,7 +8,7 @@ namespace VoluntroApi.Services;
 /// <summary>
 /// Defines the contract for membership management operations.
 /// </summary>
-public interface IMembershipService
+public interface IGroupMembershipService
 {
     /// <summary>
     /// Returns a paginated list of active members belonging to a group, or <c>null</c> if the group is not found.

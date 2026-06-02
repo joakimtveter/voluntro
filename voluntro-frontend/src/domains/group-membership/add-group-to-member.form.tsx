@@ -1,5 +1,5 @@
-import { membershipFormValidationSchema } from "#/domains/membership/membership.schema.ts";
-import { useAddMembership } from "#/domains/membership/use-membership.ts";
+import { membershipFormValidationSchema } from "#/domains/group-membership/group-membership.schema.ts";
+import { useAddMembership } from "#/domains/group-membership/use-group-membership.ts";
 import Form from "#/shared/components/forms/form.tsx";
 import { Button } from "#/shared/components/ui/button";
 import { useAppForm } from "#/shared/hooks/use-form.tsx";
