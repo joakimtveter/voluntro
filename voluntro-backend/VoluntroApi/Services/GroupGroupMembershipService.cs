@@ -9,9 +9,9 @@ using VoluntroApi.Models;
 namespace VoluntroApi.Services;
 
 /// <summary>
-/// EF Core-backed implementation of <see cref="IMembershipService"/>.
+/// EF Core-backed implementation of <see cref="IGroupMembershipService"/>.
 /// </summary>
-public class MembershipService(AppDbContext db, ILogger<GroupService> logger) : IMembershipService
+public class GroupGroupMembershipService(AppDbContext db, ILogger<GroupService> logger) : IGroupMembershipService
 {
     /// <inheritdoc/>
     public async Task<PagedResult<MemberBriefDto>?> GetMembersAsync(Guid groupId, GetMembersQuery query, CancellationToken cancellationToken)

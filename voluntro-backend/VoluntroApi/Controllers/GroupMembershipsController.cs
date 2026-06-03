@@ -10,7 +10,7 @@ namespace VoluntroApi.Controllers;
 [Route("api/[controller]")]
 [Consumes("application/json")]
 [Produces("application/json", "application/xml")]
-public class MembershipsController(IMembershipService membershipService, ILogger<GroupsController> logger) : ControllerBase
+public class GroupMembershipsController(IGroupMembershipService groupMembershipService, ILogger<GroupsController> logger) : ControllerBase
 {
     /// <summary>Returns a paginated list of members belonging to a group.</summary>
     /// <param name="groupId">The group's unique identifier.</param>
@@ -24,7 +24,7 @@ public class MembershipsController(IMembershipService membershipService, ILogger
     {
         logger.LogDebug("Fetching members for GroupId={GroupId}", groupId);
 
-        var members = await membershipService.GetMembersAsync(groupId, query, cancellationToken);
+        var members = await groupMembershipService.GetMembersAsync(groupId, query, cancellationToken);
 
         if (members is null)
         {
@@ -47,7 +47,7 @@ public class MembershipsController(IMembershipService membershipService, ILogger
     {
         logger.LogDebug("Fetching groups for members with MemberId={MemberId}", memberId);
 
-        var groups = await membershipService.GetGroupsAsync(memberId, cancellationToken);
+        var groups = await groupMembershipService.GetGroupsAsync(memberId, cancellationToken);
 
         if (groups is null)
         {
@@ -69,7 +69,7 @@ public class MembershipsController(IMembershipService membershipService, ILogger
     {
         logger.LogDebug("Adding membership for MemberId={MemberId} to GroupId={GroupId}", request.MemberId, request.GroupId);
 
-        var result = await membershipService.AddMembershipAsync(request.GroupId, request.MemberId, cancellationToken);
+        var result = await groupMembershipService.AddMembershipAsync(request.GroupId, request.MemberId, cancellationToken);
 
         return result switch
         {
@@ -92,7 +92,7 @@ public class MembershipsController(IMembershipService membershipService, ILogger
     {
         logger.LogDebug("Removing Membership for MemberId={MemberId} to GroupId={GroupId}", request.MemberId, request.GroupId);
 
-        var result = await membershipService.RemoveMembershipAsync(request.GroupId, request.MemberId, cancellationToken);
+        var result = await groupMembershipService.RemoveMembershipAsync(request.GroupId, request.MemberId, cancellationToken);
 
         return result switch
         {
