@@ -155,6 +155,42 @@ namespace VoluntroApi.Migrations
                     b.ToTable("MemberGroups");
                 });
 
+            modelBuilder.Entity("VoluntroApi.Models.MemberTag", b =>
+                {
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TagId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("MemberId", "TagId");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("MemberTags");
+                });
+
+            modelBuilder.Entity("VoluntroApi.Models.Tag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Tags");
+                });
+
             modelBuilder.Entity("VoluntroApi.Models.Venue", b =>
                 {
                     b.Property<Guid>("Id")
@@ -248,11 +284,35 @@ namespace VoluntroApi.Migrations
                     b.Navigation("Member");
                 });
 
+            modelBuilder.Entity("VoluntroApi.Models.MemberTag", b =>
+                {
+                    b.HasOne("VoluntroApi.Models.Member", "Member")
+                        .WithMany()
+                        .HasForeignKey("MemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("VoluntroApi.Models.Tag", "Tag")
+                        .WithMany("MemberTags")
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Member");
+
+                    b.Navigation("Tag");
+                });
+
             modelBuilder.Entity("VoluntroApi.Models.Group", b =>
                 {
                     b.Navigation("ChildGroups");
 
                     b.Navigation("MemberGroups");
+                });
+
+            modelBuilder.Entity("VoluntroApi.Models.Tag", b =>
+                {
+                    b.Navigation("MemberTags");
                 });
 #pragma warning restore 612, 618
         }

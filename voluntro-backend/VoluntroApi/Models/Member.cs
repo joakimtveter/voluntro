@@ -4,7 +4,7 @@ using VoluntroApi.Dtos.Members;
 namespace VoluntroApi.Models;
 
 /// <summary>
-/// Represents a church member
+/// Represents a organization member
 /// </summary>
 public class Member
 {
@@ -42,6 +42,11 @@ public class Member
     /// Gender of the member
     /// </summary>
     public LegalGender LegalGender {get; set;}
+    
+    /// <summary>
+    /// List of tags
+    /// </summary>
+    ICollection<MemberTag> MemberTags { get; set; } = new List<MemberTag>();
 
     /// <summary>
     /// UTC timestamp when the member was created.

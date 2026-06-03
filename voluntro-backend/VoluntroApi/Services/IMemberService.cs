@@ -1,5 +1,6 @@
 using VoluntroApi.Dtos.Members;
 using VoluntroApi.Dtos.Shared;
+using VoluntroApi.Dtos.Tags;
 
 namespace VoluntroApi.Services;
 
@@ -67,4 +68,22 @@ public interface IMemberService
     /// <param name="cancellationToken">Token to cancel the operation.</param>
     /// <returns>The restored member, or null if not found or not deleted.</returns>
     Task<MemberDto?> RestoreAsync(Guid memberId, CancellationToken cancellationToken);
+    
+    /// <summary>
+    /// Restores a soft-deleted member.
+    /// </summary>
+    /// <param name="memberId">The member's unique identifier.</param>
+    ///     /// <param name="tagId">The tags's unique identifier.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    /// <returns>True or null if not found.</returns>
+    Task<AddTagResult> AddTagAsync(Guid memberId, Guid tagId, CancellationToken cancellationToken);
+    
+    /// <summary>
+    /// Restores a soft-deleted member.
+    /// </summary>
+    /// <param name="memberId">The member's unique identifier.</param>
+    /// <param name="tagId">The tags's unique identifier.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    /// <returns>True or null if not found or not deleted.</returns>
+    Task<RemoveTagResult> RemoveTagAsync(Guid memberId, Guid tagId, CancellationToken cancellationToken);
 }

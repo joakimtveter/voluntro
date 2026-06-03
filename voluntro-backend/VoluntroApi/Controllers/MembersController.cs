@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using VoluntroApi.Dtos.Members;
 using VoluntroApi.Dtos.Shared;
+using VoluntroApi.Dtos.Tags;
 using VoluntroApi.Services;
 
 namespace VoluntroApi.Controllers;
@@ -144,6 +145,70 @@ public class MembersController(
 
         logger.LogInformation("Member with MemberId={MemberId} deleted.", memberId);
 
+        return NoContent();
+    }
+
+
+    [HttpPost("{memberId:guid}/tags", Name = "AddTag")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddTagToMember(
+        [FromRoute] Guid memberId, [FromBody] AddTagToMemberRequest request, CancellationToken cancellationToken
+    )
+    {
+        logger.LogDebug("Adding tag {TagId} to member {MemberId}", request.TagId, memberId);
+        
+        var result = await memberService.AddTagAsync(memberId, request.TagId, cancellationToken);
+        
+        if (result == AddTagResult.MemberNotFound)
+        {
+            logger.LogWarning("Member not found MemberId={MemberId}", memberId);
+            Problem(statusCode: StatusCodes.Status404NotFound, detail: $"Member {memberId} not found.");
+        }     
+        
+        if (result == AddTagResult.TagNotFound)
+        {
+            logger.LogWarning("Tag not found - TagId={TagId}", request.TagId);
+            Problem(statusCode: StatusCodes.Status404NotFound, detail: $"Tag {request.TagId} not found.");
+        }
+        
+        if (result == AddTagResult.AlreadyTagged)
+        {
+            logger.LogWarning("Member already has tag - MemberId={MemberId} TagId={TagId}", memberId, request.TagId);
+            Problem(statusCode: StatusCodes.Status400BadRequest, detail: $"Member {memberId} already has tag {request.TagId}.");
+        }
+        
+        return NoContent();
+    }
+    
+    [HttpDelete("{memberId:guid}/tags", Name = "RemoveTag")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemoveTagFromMember(
+        [FromRoute] Guid memberId, [FromBody] AddTagToMemberRequest request, CancellationToken cancellationToken
+    )
+    {
+        logger.LogDebug("Removing tag with TagID={TagId} from member MemberID={MemberId}", request.TagId, memberId);
+        var result = await memberService.RemoveTagAsync(memberId, request.TagId, cancellationToken);
+        if (result == RemoveTagResult.MemberNotFound)
+        {
+            logger.LogWarning("Could not remove member, member not found - MemberId={MemberId}", memberId);
+            Problem(statusCode: StatusCodes.Status404NotFound, detail: $"Member {memberId} not found.");
+        }     
+        
+        if (result == RemoveTagResult.TagNotFound)
+        {
+            logger.LogWarning("Could not remove tag, tag not found - TagId={TagId}", request.TagId);
+            Problem(statusCode: StatusCodes.Status404NotFound, detail: $"Tag {request.TagId} not found.");
+        }
+
+        if (result == RemoveTagResult.NotTagged)
+        {
+            return BadRequest($"Member {memberId} is not tagged with tag {request.TagId}.");
+        }
+        
         return NoContent();
     }
 }

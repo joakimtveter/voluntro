@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using VoluntroApi.Data;
 using VoluntroApi.Dtos.Members;
 using VoluntroApi.Dtos.Shared;
+using VoluntroApi.Dtos.Tags;
 using VoluntroApi.Models;
 
 namespace VoluntroApi.Services;
@@ -156,6 +157,63 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Member restored MemberId={MemberId}", memberId);
         return ToDto(member);
+    }
+
+    /// <inheritdoc/>
+    public async Task<AddTagResult> AddTagAsync(Guid memberId, Guid tagId, CancellationToken cancellationToken)
+    {
+        var memberExists = await db.Members.AnyAsync(m => m.Id == memberId, cancellationToken);
+        
+        if (!memberExists)
+        {
+            logger.LogWarning("AddTag failed — member not found MemberId={MemberId}", memberId);
+            return AddTagResult.MemberNotFound;
+        }
+        
+        var tagExists = await db.Tags.AnyAsync(t => t.Id == tagId, cancellationToken);
+        
+        if (!tagExists)
+        {
+            logger.LogWarning("AddTag failed — tag not found TagId={TagId}", tagId);
+            return AddTagResult.TagNotFound;
+        }
+        
+        var alreadyTagged = await db.MemberTags.AnyAsync(mt => mt.MemberId == memberId && mt.TagId == tagId, cancellationToken);
+
+        if (alreadyTagged)
+        {
+            logger.LogWarning("AddTag failed — tag already assigned MemberId={MemberId} TagId={TagId}", memberId, tagId);
+            return AddTagResult.AlreadyTagged;
+        }
+
+        db.MemberTags.Add(new MemberTag { MemberId = memberId, TagId = tagId });
+        await db.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Tag added MemberId={MemberId} TagId={TagId}", memberId, tagId);
+        return AddTagResult.Success;
+    }
+    
+    /// <inheritdoc/>
+    public async Task<RemoveTagResult> RemoveTagAsync(Guid memberId, Guid tagId, CancellationToken cancellationToken)
+    {
+        var memberExists = await db.Members.AnyAsync(m => m.Id == memberId, cancellationToken);
+        
+        if (!memberExists)
+        {
+            logger.LogWarning("AddTag failed — member not found MemberId={MemberId}", memberId);
+            return RemoveTagResult.MemberNotFound;
+        }
+        
+        var tagExists = await db.Tags.AnyAsync(t => t.Id == tagId, cancellationToken);
+        
+        if (!tagExists)
+        {
+            logger.LogWarning("AddTag failed — tag not found TagId={TagId}", tagId);
+            return RemoveTagResult.TagNotFound;
+        }
+
+        var count = await db.MemberTags.Where(mt => mt.MemberId == memberId && mt.TagId == tagId).ExecuteDeleteAsync(cancellationToken);
+        return count > 0 ? RemoveTagResult.Success : RemoveTagResult.TagNotFound;
     }
 
 

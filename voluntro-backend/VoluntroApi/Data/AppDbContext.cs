@@ -22,8 +22,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     /// <summary>Gets the group table.</summary>
     public DbSet<Group> Groups => Set<Group>();
     
+    /// <summary>Gets the tag table.</summary>
+    public DbSet<Tag> Tags => Set<Tag>();
+    
     /// <summary>Gets the member-group membership join table.</summary>
     public DbSet<MemberGroup> MemberGroups => Set<MemberGroup>();
+    
+    /// <summary>Gets the member-tags join table.</summary>
+    public DbSet<MemberTag> MemberTags => Set<MemberTag>();
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -32,7 +38,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Event>().Property(e => e.Id).HasValueGenerator<GuidV7Generator>();
         modelBuilder.Entity<Venue>().Property(v => v.Id).HasValueGenerator<GuidV7Generator>();
         modelBuilder.Entity<Group>().Property(g => g.Id).HasValueGenerator<GuidV7Generator>();
-        
+        modelBuilder.Entity<Tag>().Property(t => t.Id).HasValueGenerator<GuidV7Generator>();
+
+        modelBuilder.Entity<MemberTag>(entity =>
+        {
+            entity.HasKey(mt => new { mt.MemberId, mt.TagId });
+
+            entity.HasOne(mt => mt.Member)
+                .WithMany()
+                .HasForeignKey(mt => mt.MemberId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(mt => mt.Tag)
+                .WithMany(t => t.MemberTags)
+                .HasForeignKey(mt => mt.TagId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<MemberGroup>(entity =>
         {
             entity.HasKey(mg => new { mg.MemberId, mg.GroupId });
