@@ -1,6 +1,6 @@
 namespace VoluntroApi.Dtos.Memberships;
 
-public class UpdateMembershipResponseDto
+public class UpdateMembershipResponse
 {
     public Guid MemberId { get; init; }
     public Guid GroupId { get; init; }

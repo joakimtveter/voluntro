@@ -23,7 +23,7 @@ public class EventsController(IEventService eventService, ILogger<EventsControll
     [HttpGet(Name = "GetEvents")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<PagedResult<EventDto>>> GetEvents(
+    public async Task<ActionResult<PagedResult<EventDetails>>> GetEvents(
         [FromQuery] GetEventsQuery query, 
         CancellationToken cancellationToken)
     {
@@ -45,7 +45,7 @@ public class EventsController(IEventService eventService, ILogger<EventsControll
     [HttpGet("{eventId:guid}", Name = "GetEventById")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<EventDto>> GetEventById(
+    public async Task<ActionResult<EventDetails>> GetEventById(
         [FromRoute] Guid eventId, 
         CancellationToken cancellationToken)
     {
@@ -71,7 +71,7 @@ public class EventsController(IEventService eventService, ILogger<EventsControll
     [HttpPost(Name = "CreateEvent")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<EventDto>> CreateEvent(
+    public async Task<ActionResult<EventDetails>> CreateEvent(
         [FromBody] CreateEventRequest request,
         CancellationToken cancellationToken)
     {
@@ -91,7 +91,7 @@ public class EventsController(IEventService eventService, ILogger<EventsControll
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<EventDto>> UpdateEvent(
+    public async Task<ActionResult<EventDetails>> UpdateEvent(
         [FromRoute] Guid eventId,
         [FromBody] UpdateEventRequest request,
         CancellationToken cancellationToken)

@@ -16,7 +16,7 @@ public interface IGroupMembershipService
     /// <param name="groupId">The member's unique identifier.</param>
     /// <param name="query">The member's unique identifier.</param>
     /// <param name="cancellationToken">Token to cancel the operation.</param>
-    Task<PagedResult<MemberBriefDto>?> GetMembersAsync(Guid groupId, GetMembersQuery query, CancellationToken cancellationToken);
+    Task<PagedResult<MemberSummary>?> GetMembersAsync(Guid groupId, GetMembersQuery query, CancellationToken cancellationToken);
     
     /// <summary>
     /// Returns a list of groups the member is a part of.
@@ -24,7 +24,7 @@ public interface IGroupMembershipService
     /// <param name="memberId">The member's unique identifier.</param>
     /// <param name="cancellationToken">Token to cancel the operation.</param>
     /// <returns>List of groups the member is a part of, or null if not found.</returns>
-    Task<List<GroupBriefDto>?> GetGroupsAsync(Guid memberId, CancellationToken cancellationToken);
+    Task<List<GroupSummary>?> GetGroupsAsync(Guid memberId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Adds a member to a group and auto-enrolls them in all ancestor groups.

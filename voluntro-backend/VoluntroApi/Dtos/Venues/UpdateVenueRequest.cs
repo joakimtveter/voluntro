@@ -26,5 +26,5 @@ public class UpdateVenueRequest
     /// Updated physical address of the venue.
     /// </summary>
     [Required]
-    public AddressDto Address { get; set; }
+    public Address Address { get; set; }
 }

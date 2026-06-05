@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using VoluntroApi.Data;
 using VoluntroApi.Dtos.Events;
 using VoluntroApi.Dtos.Shared;
+using VoluntroApi.Dtos.Venues;
 using VoluntroApi.Models;
 
 namespace VoluntroApi.Services;
@@ -12,7 +13,7 @@ namespace VoluntroApi.Services;
 public class EventService(AppDbContext db, ILogger<EventService> logger) : IEventService
 {
     /// <inheritdoc />
-    public async Task<PagedResult<EventDto>> GetAllAsync(GetEventsQuery query, CancellationToken cancellationToken)
+    public async Task<PagedResult<EventDetails>> GetAllAsync(GetEventsQuery query, CancellationToken cancellationToken)
     {
         logger.LogDebug("Querying events Page={Page} PageSize={PageSize}", query.Page, query.PageSize);
         
@@ -30,7 +31,7 @@ public class EventService(AppDbContext db, ILogger<EventService> logger) : IEven
             .Where(e => e.StartsAt >= from)
             .Where(e => to == null || e.StartsAt <= to)
             .OrderBy(e => e.StartsAt)
-            .ToPagedResultAsync( e => new EventDto
+            .ToPagedResultAsync( e => new EventDetails
             {
                 Id = e.Id,
                 Title = e.Title,
@@ -41,26 +42,43 @@ public class EventService(AppDbContext db, ILogger<EventService> logger) : IEven
     }
     
     /// <inheritdoc />
-    public async Task<EventDto?> GetByIdAsync(Guid eventId, CancellationToken cancellationToken)
+    public async Task<EventDetails?> GetByIdAsync(Guid eventId, CancellationToken cancellationToken)
     {
         logger.LogDebug("Querying event with EventId={EventId}", eventId);
 
         return await db.Events
             .AsNoTracking()
             .Where(e => e.Id == eventId && e.IsDeleted == false)
-            .Select(e => new EventDto
+            .Include(e => e.Venue)
+            .Select(e => new EventDetails
             {
                 Id = e.Id,
                 Title = e.Title,
                 Description = e.Description,
                 StartsAt = e.StartsAt,
                 EndsAt = e.EndsAt,
+                VenueName = e.Venue.Name,
+                Venue = new VenueDetails()
+                {
+                    Id = e.VenueId, 
+                    Name = e.Venue.Name, 
+                    Description = e.Venue.Description,
+                    IsDeleted = e.IsDeleted,
+                    Address = new Address()
+                    {
+                        StreetAddress = e.Venue.StreetAddress, 
+                        StreetAddress2 = e.Venue.StreetAddress2, 
+                        PostalCode = e.Venue.PostalCode, 
+                        City = e.Venue.City, 
+                        Country = e.Venue.Country
+                    }
+                }
             })
             .FirstOrDefaultAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<EventDto> CreateAsync(CreateEventRequest request, CancellationToken cancellationToken = default)
+    public async Task<EventDetails> CreateAsync(CreateEventRequest request, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Creating event with Title={Title}", request.Title);
 
@@ -76,7 +94,7 @@ public class EventService(AppDbContext db, ILogger<EventService> logger) : IEven
         db.Events.Add(newEvent);
         await db.SaveChangesAsync(cancellationToken);
 
-        return new EventDto
+        return new EventDetails
         {
             Id = newEvent.Id,
             Title = newEvent.Title,
@@ -87,7 +105,7 @@ public class EventService(AppDbContext db, ILogger<EventService> logger) : IEven
     }
     
     /// <inheritdoc />
-    public async Task<EventDto?> UpdateAsync(Guid eventId, UpdateEventRequest request, CancellationToken cancellationToken = default)
+    public async Task<EventDetails?> UpdateAsync(Guid eventId, UpdateEventRequest request, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Updating event with EventId={EventId}", eventId);
 
@@ -106,7 +124,7 @@ public class EventService(AppDbContext db, ILogger<EventService> logger) : IEven
 
         await db.SaveChangesAsync(cancellationToken);
 
-        return new EventDto
+        return new EventDetails
         {
             Id = eventToUpdate.Id,
             Title = eventToUpdate.Title,

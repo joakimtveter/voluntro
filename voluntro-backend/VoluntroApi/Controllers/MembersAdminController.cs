@@ -12,9 +12,9 @@ namespace VoluntroApi.Controllers;
 [Route("api/admin/members")]
 [Produces("application/json", "application/xml")]
 [Consumes("application/json")]
-public class AdminMembersController(
+public class MembersAdminController(
     IMemberService memberService,
-    ILogger<AdminMembersController> logger
+    ILogger<MembersAdminController> logger
 ) : ControllerBase
 {
     /// <summary>
@@ -26,7 +26,7 @@ public class AdminMembersController(
     [HttpGet(Name = "AdminGetMembers")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<PagedResult<MemberBriefDto>>> GetMembers(
+    public async Task<ActionResult<PagedResult<MemberSummary>>> GetMembers(
         [FromQuery] AdminGetMembersQuery query,
         CancellationToken cancellationToken)
     {
@@ -48,7 +48,7 @@ public class AdminMembersController(
     [HttpGet("{memberId:guid}", Name = "AdminGetMemberById")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<MemberDto>> GetMemberById(
+    public async Task<ActionResult<MemberDetails>> GetMemberById(
         [FromRoute] Guid memberId,
         CancellationToken cancellationToken)
     {
@@ -74,7 +74,7 @@ public class AdminMembersController(
     [HttpPost("{memberId:guid}/restore", Name = "AdminRestoreMember")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<MemberDto>> RestoreMember(
+    public async Task<ActionResult<MemberDetails>> RestoreMember(
         [FromRoute] Guid memberId,
         CancellationToken cancellationToken)
     {

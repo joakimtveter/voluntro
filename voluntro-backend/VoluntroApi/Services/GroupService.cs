@@ -12,7 +12,7 @@ namespace VoluntroApi.Services;
 public class GroupService(AppDbContext db, ILogger<GroupService> logger) : IGroupService
 {
     /// <inheritdoc/>
-    public async Task<PagedResult<GroupBriefDto>> GetAllAsync(GetGroupsQuery query, 
+    public async Task<PagedResult<GroupSummary>> GetAllAsync(GetGroupsQuery query, 
         CancellationToken cancellationToken, bool includeDeleted = false)
     {
         logger.LogDebug("Querying groups Page={Page} PageSize={PageSize} IncludeDeleted={IncludeDeleted}", query.Page, query.PageSize, includeDeleted);
@@ -23,7 +23,7 @@ public class GroupService(AppDbContext db, ILogger<GroupService> logger) : IGrou
             .Where(g => includeDeleted || !g.IsDeleted )
             .OrderBy(g => g.ParentGroupId)
             .ThenBy(g => g.Name)
-            .ToPagedResultAsync(g => new GroupBriefDto
+            .ToPagedResultAsync(g => new GroupSummary
             {
                 Id = g.Id,
                 Name = g.Name,
@@ -35,7 +35,7 @@ public class GroupService(AppDbContext db, ILogger<GroupService> logger) : IGrou
     }
 
     /// <inheritdoc/>
-    public async Task<GroupDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken, bool includeDeleted)
+    public async Task<GroupDetails?> GetByIdAsync(Guid id, CancellationToken cancellationToken, bool includeDeleted)
     {
         logger.LogDebug("Querying group GroupId={GroupId} IncludeDeleted={IncludeDeleted}", id, includeDeleted);
 
@@ -48,7 +48,7 @@ public class GroupService(AppDbContext db, ILogger<GroupService> logger) : IGrou
                 ParentGroupName = g.ParentGroup != null ? g.ParentGroup.Name : null,
                 ChildGroups = g.ChildGroups
                     .Where(c => !c.IsDeleted)
-                    .Select(c => new GroupBriefDto
+                    .Select(c => new GroupSummary
                     {
                         Id = c.Id,
                         Name = c.Name,
@@ -67,7 +67,7 @@ public class GroupService(AppDbContext db, ILogger<GroupService> logger) : IGrou
 
         var ancestors = await BuildAncestorChainAsync(data.ParentGroupId, cancellationToken);
 
-        return new GroupDto
+        return new GroupDetails
         {
             Id = data.Id,
             Name = data.Name,
@@ -104,7 +104,7 @@ public class GroupService(AppDbContext db, ILogger<GroupService> logger) : IGrou
     }
 
     /// <inheritdoc/>
-    public async Task<GroupDto?> CreateAsync(CreateGroupRequest request, CancellationToken cancellationToken)
+    public async Task<GroupDetails?> CreateAsync(CreateGroupRequest request, CancellationToken cancellationToken)
     {
         logger.LogDebug("Creating group Name={Name}", request.Name);
 
@@ -138,7 +138,7 @@ public class GroupService(AppDbContext db, ILogger<GroupService> logger) : IGrou
     }
 
     /// <inheritdoc/>
-    public async Task<(GroupDto?, UpdateGroupResult)> UpdateAsync(Guid id, UpdateGroupRequest request, CancellationToken cancellationToken)
+    public async Task<(GroupDetails?, UpdateGroupResult)> UpdateAsync(Guid id, UpdateGroupRequest request, CancellationToken cancellationToken)
     {
         logger.LogDebug("Updating group GroupId={GroupId}", id);
 
@@ -214,7 +214,7 @@ public class GroupService(AppDbContext db, ILogger<GroupService> logger) : IGrou
     }
     
     /// <inheritdoc/>
-    public async Task<(GroupDto?, RestoreGroupResult)> RestoreAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<(GroupDetails?, RestoreGroupResult)> RestoreAsync(Guid id, CancellationToken cancellationToken)
     {
         var groupToRestore = await db.Groups.FindAsync([id], cancellationToken);
         if (groupToRestore is null) return (null, RestoreGroupResult.NotFound);

@@ -13,23 +13,27 @@ namespace VoluntroApi.Services;
 public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMemberService
 {
     /// <inheritdoc/>
-    public async Task<PagedResult<MemberBriefDto>> GetAllAsync(GetMembersQuery query,
+    public async Task<PagedResult<MemberSummary>> GetAllAsync(GetMembersQuery query,
         CancellationToken cancellationToken, bool includeDeleted = false)
     {
-        logger.LogDebug("Querying members Page={Page} PageSize={PageSize} IncludeDeleted={IncludeDeleted}", query.Page, query.PageSize, includeDeleted);
+        logger.LogDebug("Querying members Page={Page} PageSize={PageSize} IncludeDeleted={IncludeDeleted} TagIds={TagIds}", query.Page, query.PageSize, includeDeleted, query.TagIds);
+
+        var hasTagFilter = query.TagIds is { Count: > 0 };
 
         return await db.Members
             .AsNoTracking()
             .Where(m => includeDeleted || !m.IsDeleted)
+            .Where(m => !hasTagFilter || m.MemberTags.Any(mt => query.TagIds!.Contains(mt.TagId)))
             .OrderBy(m => m.LastName)
             .ThenBy(m => m.FirstName)
-            .ToPagedResultAsync(m => new MemberBriefDto
+            .ToPagedResultAsync(m => new MemberSummary
             {
                 Id = m.Id,
                 FirstName = m.FirstName,
                 MiddleNames = m.MiddleNames,
                 LastName = m.LastName,
                 DateOfBirth = m.DateOfBirth,
+                Tags = m.MemberTags.Select(mt => new TagDto { Id = mt.Tag.Id, Name = mt.Tag.Name, Color = mt.Tag.Color }).ToList(),
                 LegalGender = m.LegalGender,
                 CreatedAt = m.CreatedAt,
                 UpdatedAt = m.UpdatedAt,
@@ -38,7 +42,7 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
     }
 
     /// <inheritdoc/>
-    public async Task<MemberDto?> GetByIdAsync(Guid memberId, CancellationToken cancellationToken, bool includeDeleted = false)
+    public async Task<MemberDetails?> GetByIdAsync(Guid memberId, CancellationToken cancellationToken, bool includeDeleted = false)
     {
         logger.LogDebug("Querying member MemberId={MemberId} IncludeDeleted={IncludeDeleted}", memberId, includeDeleted);
 
@@ -51,7 +55,7 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
     }
     
     /// <inheritdoc/>
-    public async Task<MemberDto> CreateAsync(CreateMemberRequest request, CancellationToken cancellationToken)
+    public async Task<MemberDetails> CreateAsync(CreateMemberRequest request, CancellationToken cancellationToken)
     {
         logger.LogDebug("Creating member");
 
@@ -74,7 +78,7 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
     }
 
     /// <inheritdoc/>
-    public async Task<MemberDto?> UpdateAsync(Guid memberId, UpdateMemberRequest request, CancellationToken cancellationToken)
+    public async Task<MemberDetails?> UpdateAsync(Guid memberId, UpdateMemberRequest request, CancellationToken cancellationToken)
     {
         logger.LogDebug("Updating member MemberId={MemberId}", memberId);
 
@@ -141,7 +145,7 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
     }
     
     /// <inheritdoc/>
-    public async Task<MemberDto?> RestoreAsync(Guid memberId, CancellationToken cancellationToken)
+    public async Task<MemberDetails?> RestoreAsync(Guid memberId, CancellationToken cancellationToken)
     {
         var member = await db.Members.FindAsync([memberId], cancellationToken);
 
@@ -217,7 +221,7 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
     }
 
 
-    private static MemberDto ToDto(Member m) => new()
+    private static MemberDetails ToDto(Member m) => new()
     {
         Id = m.Id,
         FirstName = m.FirstName,

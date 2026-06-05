@@ -1,9 +1,11 @@
+using VoluntroApi.Dtos.Tags;
+
 namespace VoluntroApi.Dtos.Members;
 
 /// <summary>
 /// Represents a member returned from the API.
 /// </summary>
-public class MemberBriefDto
+public class MemberSummary
 {
     /// <summary>
     /// Unique identifier for the member.
@@ -31,9 +33,9 @@ public class MemberBriefDto
     public DateOnly? DateOfBirth { get; init; }
 
     /// <summary>
-    /// Age in years derived from DateOfBirth, or null if DateOfBirth is unknown.
+    /// Date of birth of the member, if known.
     /// </summary>
-    public int? Age => DateOfBirth.HasValue ? CalculateAge(DateOfBirth.Value) : null;
+    public List<TagDto> Tags { get; init; } = [];
 
     /// <summary>
     /// Gender of the member.
@@ -54,18 +56,5 @@ public class MemberBriefDto
     /// Indicates whether the member has been soft-deleted.
     /// </summary>
     public bool IsDeleted { get; init; }
-
-    private static int CalculateAge(DateOnly birthDate)
-    {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var age = today.Year - birthDate.Year;
-        if (birthDate > today.AddYears(-age)) age--;
-        return age;
-    }
-}
-
-/// <inheritdoc />
-public class MemberDto : MemberBriefDto
-{
-
+    
 }

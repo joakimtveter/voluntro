@@ -19,7 +19,7 @@ public class GroupMembershipsController(IGroupMembershipService groupMembershipS
     [HttpGet("Group/{groupId:guid}", Name = "GetGroupMembers")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<MemberBriefDto>> GetGroupMembers(
+    public async Task<ActionResult<MemberSummary>> GetGroupMembers(
         [FromRoute] Guid groupId, [FromQuery] GetMembersQuery query, CancellationToken cancellationToken)
     {
         logger.LogDebug("Fetching members for GroupId={GroupId}", groupId);
@@ -42,7 +42,7 @@ public class GroupMembershipsController(IGroupMembershipService groupMembershipS
     [HttpGet("Member/{memberId:guid}", Name = "GetMemberGroups")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<List<GroupBriefDto>>> GetMemberGroups(
+    public async Task<ActionResult<List<GroupSummary>>> GetMemberGroups(
         [FromRoute] Guid memberId, [FromQuery] GetMembersQuery query, CancellationToken cancellationToken)
     {
         logger.LogDebug("Fetching groups for members with MemberId={MemberId}", memberId);
@@ -65,7 +65,7 @@ public class GroupMembershipsController(IGroupMembershipService groupMembershipS
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<UpdateMembershipResponseDto>> AddMembership([FromBody] UpdateMembershipRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<UpdateMembershipResponse>> AddMembership([FromBody] UpdateMembershipRequest request, CancellationToken cancellationToken)
     {
         logger.LogDebug("Adding membership for MemberId={MemberId} to GroupId={GroupId}", request.MemberId, request.GroupId);
 
@@ -73,7 +73,7 @@ public class GroupMembershipsController(IGroupMembershipService groupMembershipS
 
         return result switch
         {
-            UpdateMembershipResult.Success => Ok(new UpdateMembershipResponseDto { MemberId = request.MemberId, GroupId = request.GroupId }),
+            UpdateMembershipResult.Success => Ok(new UpdateMembershipResponse { MemberId = request.MemberId, GroupId = request.GroupId }),
             UpdateMembershipResult.GroupNotFound => NotFound("Group not found"),
             UpdateMembershipResult.MemberNotFound => NotFound("Member not found"),
             UpdateMembershipResult.AlreadyMember => Conflict("Member is already in this group"),
@@ -88,7 +88,7 @@ public class GroupMembershipsController(IGroupMembershipService groupMembershipS
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<UpdateMembershipResponseDto>> RemoveMembership([FromBody] UpdateMembershipRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<UpdateMembershipResponse>> RemoveMembership([FromBody] UpdateMembershipRequest request, CancellationToken cancellationToken)
     {
         logger.LogDebug("Removing Membership for MemberId={MemberId} to GroupId={GroupId}", request.MemberId, request.GroupId);
 
@@ -96,7 +96,7 @@ public class GroupMembershipsController(IGroupMembershipService groupMembershipS
 
         return result switch
         {
-            UpdateMembershipResult.Success => Ok(new UpdateMembershipResponseDto { MemberId = request.MemberId, GroupId = request.GroupId }),
+            UpdateMembershipResult.Success => Ok(new UpdateMembershipResponse { MemberId = request.MemberId, GroupId = request.GroupId }),
             UpdateMembershipResult.GroupNotFound => NotFound("Group not found"),
             UpdateMembershipResult.MemberNotFound => NotFound("Member not found"),
             UpdateMembershipResult.NotMember => Conflict("Member was not in this group"),

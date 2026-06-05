@@ -3,13 +3,13 @@ namespace VoluntroApi.Dtos.Groups;
 /// <summary>
 /// Lightweight group representation used in paginated list responses.
 /// </summary>
-public class GroupBriefDto
+public class GroupSummary
 {
     /// <summary>Unique identifier for the group.</summary>
     public Guid Id { get; init; }
 
     /// <summary>Display name of the group.</summary>
-    public string Name { get; init; }
+    public string Name { get; init; } = string.Empty;
 
     /// <summary>The identifier of the parent group, or <c>null</c> if this is a root group.</summary>
     public Guid? ParentGroupId { get; init; }

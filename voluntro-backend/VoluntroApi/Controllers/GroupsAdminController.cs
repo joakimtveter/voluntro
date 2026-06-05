@@ -8,16 +8,16 @@ namespace VoluntroApi.Controllers;
 [Route("api/admin/groups")]
 [Produces("application/json", "application/xml")]
 [Consumes("application/json")]
-public class AdminGroupsController(
+public class GroupsAdminController(
     IGroupService groupService,
-    ILogger<AdminMembersController> logger
+    ILogger<MembersAdminController> logger
 ) : ControllerBase
 {
     /// <summary>Returns a paginated list of groups.</summary>
     [HttpGet(Name = "AdminGetGroups")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<GroupBriefDto>> AdminGetGroups(
+    public async Task<ActionResult<GroupSummary>> AdminGetGroups(
         [FromQuery] AdminGetGroupsQuery query, CancellationToken cancellationToken)
     {
         logger.LogDebug(
@@ -41,7 +41,7 @@ public class AdminGroupsController(
     [HttpGet("{groupId:guid}", Name = "AdminGetGroupById")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<GroupDto>> GetGroupById([FromRoute] Guid groupId, [FromQuery] bool includeDeleted,
+    public async Task<ActionResult<GroupDetails>> GetGroupById([FromRoute] Guid groupId, [FromQuery] bool includeDeleted,
         CancellationToken cancellationToken)
     {
         logger.LogDebug("ADMIN: Fetching group with Id={GroupId}, includeDeleted={includeDeleted}.", groupId,  includeDeleted);
@@ -64,7 +64,7 @@ public class AdminGroupsController(
     [HttpPost("{groupId:guid}/Restore", Name = "AdminDeleteGroup")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<GroupDto>> RestoreGroup([FromRoute] Guid groupId,
+    public async Task<ActionResult<GroupDetails>> RestoreGroup([FromRoute] Guid groupId,
         CancellationToken cancellationToken)
     {
         logger.LogDebug("ADMIN: Restore group with Id={GroupId}.", groupId);

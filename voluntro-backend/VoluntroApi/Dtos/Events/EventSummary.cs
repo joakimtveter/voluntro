@@ -1,16 +1,14 @@
-using VoluntroApi.Dtos.Shared;
-
 namespace VoluntroApi.Dtos.Events;
 
 /// <summary>
 /// A lightweight summary of an event, suitable for list views.
 /// </summary>
-public class EventBriefDto
+public class EventSummary
 {
     /// <summary>
     /// Unique identifier of the event.
     /// </summary>
-    public Guid Id { get; set; }
+    public Guid Id { get; init; }
 
     /// <summary>
     /// Display title of the event.
@@ -35,16 +33,5 @@ public class EventBriefDto
     /// <summary>
     /// Name of the venue where the event takes place.
     /// </summary>
-    public string Venue {get; set;} = string.Empty;
-}
-
-/// <summary>
-/// Full details of an event, including venue address.
-/// </summary>
-public class EventDto : EventBriefDto
-{
-    /// <summary>
-    /// Physical address of the venue.
-    /// </summary>
-    public AddressDto Address {get; set;}
+    public string VenueName {get; set;} = string.Empty;
 }

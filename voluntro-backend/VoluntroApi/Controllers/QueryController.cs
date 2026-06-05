@@ -20,7 +20,7 @@ public class QueryController(IQueryService queryService,  ILogger<QueryControlle
     /// <returns>A list of matching venue options.</returns>
     [HttpGet("Venues")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<SelectOptionDto>>> GetVenueOptions(
+    public async Task<ActionResult<List<SelectOption>>> GetVenueOptions(
         [FromQuery] string? query, 
         CancellationToken cancellationToken)
     {
@@ -36,7 +36,7 @@ public class QueryController(IQueryService queryService,  ILogger<QueryControlle
     /// <returns>A list of matching group options.</returns>
     [HttpGet("Groups")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<SelectOptionDto>>> GetGroupOptions(
+    public async Task<ActionResult<List<SelectOption>>> GetGroupOptions(
         [FromQuery] string? query, 
         CancellationToken cancellationToken)
     {
@@ -52,7 +52,7 @@ public class QueryController(IQueryService queryService,  ILogger<QueryControlle
     /// <returns>A list of matching group options.</returns>
     [HttpGet("Members")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<SelectOptionDto>>> GetMemberOptions(
+    public async Task<ActionResult<List<SelectOption>>> GetMemberOptions(
         [FromQuery] string? query, 
         CancellationToken cancellationToken)
     {

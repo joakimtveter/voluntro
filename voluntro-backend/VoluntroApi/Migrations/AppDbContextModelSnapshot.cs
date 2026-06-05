@@ -287,7 +287,7 @@ namespace VoluntroApi.Migrations
             modelBuilder.Entity("VoluntroApi.Models.MemberTag", b =>
                 {
                     b.HasOne("VoluntroApi.Models.Member", "Member")
-                        .WithMany()
+                        .WithMany("MemberTags")
                         .HasForeignKey("MemberId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -308,6 +308,11 @@ namespace VoluntroApi.Migrations
                     b.Navigation("ChildGroups");
 
                     b.Navigation("MemberGroups");
+                });
+
+            modelBuilder.Entity("VoluntroApi.Models.Member", b =>
+                {
+                    b.Navigation("MemberTags");
                 });
 
             modelBuilder.Entity("VoluntroApi.Models.Tag", b =>

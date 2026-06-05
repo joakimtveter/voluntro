@@ -14,7 +14,7 @@ public class GroupsController(IGroupService groupService, ILogger<GroupsControll
     [HttpGet(Name = "GetGroups")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<GroupBriefDto>> GetGroups(
+    public async Task<ActionResult<GroupSummary>> GetGroups(
         [FromQuery] GetGroupsQuery query, CancellationToken cancellationToken)
     {
         logger.LogDebug(
@@ -37,7 +37,7 @@ public class GroupsController(IGroupService groupService, ILogger<GroupsControll
     [HttpGet("{groupId:guid}", Name = "GetGroupById")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<GroupDto>> GetGroupById([FromRoute] Guid groupId,
+    public async Task<ActionResult<GroupDetails>> GetGroupById([FromRoute] Guid groupId,
         CancellationToken cancellationToken)
     {
         logger.LogDebug("Fetching group with Id={groupId}.", groupId);
@@ -57,7 +57,7 @@ public class GroupsController(IGroupService groupService, ILogger<GroupsControll
     [HttpPost(Name = "CreateGroup")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<GroupDto>> CreateGroup(
+    public async Task<ActionResult<GroupDetails>> CreateGroup(
         [FromBody] CreateGroupRequest request, CancellationToken cancellationToken)
     {
         logger.LogDebug("Creating group {GroupName}", request.Name);
@@ -82,7 +82,7 @@ public class GroupsController(IGroupService groupService, ILogger<GroupsControll
     [HttpPut("{groupId:guid}", Name = "UpdateGroup")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<GroupDto>> UpdateGroup(
+    public async Task<ActionResult<GroupDetails>> UpdateGroup(
         [FromRoute] Guid groupId, [FromBody] UpdateGroupRequest request, CancellationToken cancellationToken)
     {
         logger.LogDebug("Updating group with id:  {GroupName}", request.Name);

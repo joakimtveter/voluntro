@@ -43,7 +43,29 @@ public class TagsController(
     [HttpPut("{tagId:guid}", Name = "UpdateTag")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TagDto>> UpdateTag([FromRoute] Guid tagId, [FromBody] UpdateTagRequest request, CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Updating tag with TagId={TagId}", tagId);
+        
+        var tag = await tagService.UpdateAsync(tagId, request, cancellationToken);
+        
+        if (tag is null)
+        {
+            logger.LogWarning("Could not update tag. Tag with TagId={TagId} not found.", tagId);
+            return NotFound("Tag not found.");
+        }
+        
+        logger.LogDebug("Tag with TagId={TagId} updated.", tagId);
+        
+        return Ok(tag);
+    }
+    
+    [HttpDelete("{tagId:guid}", Name = "DeleteTag")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> DeleteTag([FromRoute] Guid tagId, CancellationToken cancellationToken)
     {
         logger.LogDebug("Deleting tag with TagId={TagId}", tagId);
         

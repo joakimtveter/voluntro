@@ -45,7 +45,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasKey(mt => new { mt.MemberId, mt.TagId });
 
             entity.HasOne(mt => mt.Member)
-                .WithMany()
+                .WithMany(m => m.MemberTags)
                 .HasForeignKey(mt => mt.MemberId)
                 .OnDelete(DeleteBehavior.Cascade);
 

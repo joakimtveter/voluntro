@@ -5,7 +5,7 @@ namespace VoluntroApi.Dtos.Shared;
 /// <summary>
 /// A generic key-label pair for use in dropdown and select inputs.
 /// </summary>
-public class SelectOptionDto
+public class SelectOption
 {
     /// <summary>
     /// Unique identifier of the option.

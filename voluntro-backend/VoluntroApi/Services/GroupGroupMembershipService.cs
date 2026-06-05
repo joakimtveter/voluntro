@@ -14,7 +14,7 @@ namespace VoluntroApi.Services;
 public class GroupGroupMembershipService(AppDbContext db, ILogger<GroupService> logger) : IGroupMembershipService
 {
     /// <inheritdoc/>
-    public async Task<PagedResult<MemberBriefDto>?> GetMembersAsync(Guid groupId, GetMembersQuery query, CancellationToken cancellationToken)
+    public async Task<PagedResult<MemberSummary>?> GetMembersAsync(Guid groupId, GetMembersQuery query, CancellationToken cancellationToken)
     {
         var groupExists = await db.Groups.AnyAsync(g => g.Id == groupId && !g.IsDeleted, cancellationToken);
         if (!groupExists)
@@ -28,7 +28,7 @@ public class GroupGroupMembershipService(AppDbContext db, ILogger<GroupService> 
             .Where(mg => mg.GroupId == groupId && !mg.Member.IsDeleted)
             .OrderBy(mg => mg.Member.LastName)
             .ThenBy(mg => mg.Member.FirstName)
-            .ToPagedResultAsync(mg => new MemberBriefDto
+            .ToPagedResultAsync(mg => new MemberSummary
             {
                 Id = mg.Member.Id,
                 FirstName = mg.Member.FirstName,
@@ -43,7 +43,7 @@ public class GroupGroupMembershipService(AppDbContext db, ILogger<GroupService> 
     }
 
     /// <inheritdoc/>
-    public async Task<List<GroupBriefDto>?> GetGroupsAsync(Guid memberId, CancellationToken cancellationToken)
+    public async Task<List<GroupSummary>?> GetGroupsAsync(Guid memberId, CancellationToken cancellationToken)
     {
         var memberExists = await db.Members.AnyAsync(m => m.Id == memberId && !m.IsDeleted, cancellationToken);
         if (!memberExists) return null;
@@ -51,7 +51,7 @@ public class GroupGroupMembershipService(AppDbContext db, ILogger<GroupService> 
         return await db.MemberGroups
             .AsNoTracking()
             .Where(mg => mg.MemberId == memberId)
-            .Select(mg => new GroupBriefDto
+            .Select(mg => new GroupSummary
             {
                 Id = mg.Group.Id,
                 Name = mg.Group.Name,

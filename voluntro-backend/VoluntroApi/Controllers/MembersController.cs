@@ -26,7 +26,7 @@ public class MembersController(
     [HttpGet(Name = "GetMembers")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<PagedResult<MemberDto>>> GetMembers(
+    public async Task<ActionResult<PagedResult<MemberDetails>>> GetMembers(
         [FromQuery] GetMembersQuery query, 
         CancellationToken cancellationToken)
     {
@@ -48,7 +48,7 @@ public class MembersController(
     [HttpGet("{memberId:guid}", Name = "GetMemberById")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<MemberDto>> GetMemberById(
+    public async Task<ActionResult<MemberDetails>> GetMemberById(
         [FromRoute] Guid memberId,
         CancellationToken cancellationToken)
     {
@@ -74,7 +74,7 @@ public class MembersController(
     [HttpPost(Name = "CreateMember")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<MemberDto>> CreateMember(
+    public async Task<ActionResult<MemberDetails>> CreateMember(
         [FromBody]CreateMemberRequest request, 
         CancellationToken cancellationToken)
     {
@@ -102,7 +102,7 @@ public class MembersController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<MemberDto>> UpdateMember(
+    public async Task<ActionResult<MemberDetails>> UpdateMember(
         [FromRoute] Guid memberId,
         [FromBody] UpdateMemberRequest request,
         CancellationToken cancellationToken)

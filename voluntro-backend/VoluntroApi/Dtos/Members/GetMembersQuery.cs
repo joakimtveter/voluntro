@@ -18,6 +18,11 @@ public class GetMembersQuery
     /// </summary>
     [Range(1, 100)]
     public int PageSize { get; init; } = 15;
+
+    /// <summary>
+    /// Filter to members that have at least one of the specified tags. Omit or leave empty to return all members.
+    /// </summary>
+    public List<Guid>? TagIds { get; init; }
 }
 
 /// <summary>

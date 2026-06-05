@@ -26,5 +26,5 @@ public class CreateVenueRequest
     /// Physical address of the venue.
     /// </summary>
     [Required]
-    public AddressDto Address { get; set; } = new AddressDto();
+    public Address Address { get; set; } = new Address();
 }

@@ -16,7 +16,7 @@ public class VenuesController(IVenueService venueService, ILogger<VenuesControll
     [HttpGet(Name = "GetVenues")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<PagedResult<VenueBriefDto>>> GetVenues(
+    public async Task<ActionResult<PagedResult<VenueSummary>>> GetVenues(
         [FromQuery] GetVenuesQuery query,  CancellationToken cancellationToken)
     {
         logger.LogDebug("GetVenues");
@@ -32,7 +32,7 @@ public class VenuesController(IVenueService venueService, ILogger<VenuesControll
     [HttpGet("{venueId:guid}", Name = "GetVenueById")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<VenueDto>> GetVenueById(
+    public async Task<ActionResult<VenueDetails>> GetVenueById(
         [FromRoute] Guid venueId, 
         CancellationToken cancellationToken)
     {
@@ -53,7 +53,7 @@ public class VenuesController(IVenueService venueService, ILogger<VenuesControll
     [HttpPost(Name = "CreateVenue")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<VenueDto>> CreateVenue(
+    public async Task<ActionResult<VenueDetails>> CreateVenue(
         [FromBody] CreateVenueRequest request,
         CancellationToken cancellationToken)
     {
@@ -68,7 +68,7 @@ public class VenuesController(IVenueService venueService, ILogger<VenuesControll
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<VenueDto>> UpdateVenue(
+    public async Task<ActionResult<VenueDetails>> UpdateVenue(
         [FromRoute] Guid venueId,
         [FromBody] UpdateVenueRequest request,
         CancellationToken cancellationToken)

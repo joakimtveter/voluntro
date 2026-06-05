@@ -20,7 +20,6 @@ public class TagService(AppDbContext db, ILogger<VenueService> logger) : ITagSer
 
     public async Task<TagDto> CreateAsync(CreateTagRequest request, CancellationToken cancellationToken)
     {
-        var now = DateTimeOffset.UtcNow;
         var tag = new Tag
         {
             Name = request.Name.Trim(),
@@ -28,6 +27,20 @@ public class TagService(AppDbContext db, ILogger<VenueService> logger) : ITagSer
         };
 
         db.Tags.Add(tag);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return new TagDto { Id = tag.Id, Name = tag.Name, Color = tag.Color };
+    }
+
+    public async Task<TagDto?> UpdateAsync(Guid tagId, UpdateTagRequest request, CancellationToken cancellationToken)
+    {
+        var tag = await db.Tags.FindAsync([tagId], cancellationToken);
+
+        if (tag is null) return null;
+        
+        tag.Name = request.Name.Trim();
+        tag.Color = request.Color.Trim();
+        
         await db.SaveChangesAsync(cancellationToken);
 
         return new TagDto { Id = tag.Id, Name = tag.Name, Color = tag.Color };

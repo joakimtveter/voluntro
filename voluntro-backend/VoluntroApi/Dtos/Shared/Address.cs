@@ -3,7 +3,7 @@ namespace VoluntroApi.Dtos.Shared;
 /// <summary>
 /// Represents a postal address.
 /// </summary>
-public class AddressDto
+public class Address
 {
     /// <summary>
     /// Primary street address line.

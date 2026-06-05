@@ -46,7 +46,7 @@ public class Member
     /// <summary>
     /// List of tags
     /// </summary>
-    ICollection<MemberTag> MemberTags { get; set; } = new List<MemberTag>();
+    public ICollection<MemberTag> MemberTags { get; set; } = new List<MemberTag>();
 
     /// <summary>
     /// UTC timestamp when the member was created.

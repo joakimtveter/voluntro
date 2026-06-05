@@ -4,9 +4,9 @@ namespace VoluntroApi.Dtos.Groups;
 
 /// <summary>
 /// Full group representation returned from single-item endpoints.
-/// Extends <see cref="GroupBriefDto"/> with description, direct children, and member count.
+/// Extends <see cref="GroupSummary"/> with description, direct children, and member count.
 /// </summary>
-public class GroupDto : GroupBriefDto
+public class GroupDetails : GroupSummary
 {
     /// <summary>Optional description of the group's purpose.</summary>
     public string? Description { get; init; }
@@ -15,7 +15,7 @@ public class GroupDto : GroupBriefDto
     public string? ParentGroupName { get; init; }
 
     /// <summary>Direct child groups nested under this group (excludes soft-deleted children).</summary>
-    public IReadOnlyList<GroupBriefDto> ChildGroups { get; init; } = [];
+    public IReadOnlyList<GroupSummary> ChildGroups { get; init; } = [];
 
     /// <summary>Number of active (non-deleted) members currently in this group.</summary>
     public int MemberCount { get; init; }

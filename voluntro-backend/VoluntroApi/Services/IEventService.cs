@@ -14,7 +14,7 @@ public interface IEventService
     /// <param name="query">Pagination and filter parameters.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paged result of events.</returns>
-    Task<PagedResult<EventDto>> GetAllAsync(GetEventsQuery query, CancellationToken cancellationToken);
+    Task<PagedResult<EventDetails>> GetAllAsync(GetEventsQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns a single event by its unique identifier.
@@ -22,7 +22,7 @@ public interface IEventService
     /// <param name="eventId">The event's unique identifier.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The event, or null if not found.</returns>
-    Task<EventDto?> GetByIdAsync(Guid eventId, CancellationToken cancellationToken);
+    Task<EventDetails?> GetByIdAsync(Guid eventId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Creates a new event.
@@ -30,7 +30,7 @@ public interface IEventService
     /// <param name="request">The event details.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created event.</returns>
-    Task<EventDto> CreateAsync(CreateEventRequest request, CancellationToken cancellationToken);
+    Task<EventDetails> CreateAsync(CreateEventRequest request, CancellationToken cancellationToken);
 
     /// <summary>
     /// Updates an existing event.
@@ -39,7 +39,7 @@ public interface IEventService
     /// <param name="request">The updated event details.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated event.</returns>
-    Task<EventDto?> UpdateAsync(Guid eventId, UpdateEventRequest request, CancellationToken cancellationToken);
+    Task<EventDetails?> UpdateAsync(Guid eventId, UpdateEventRequest request, CancellationToken cancellationToken);
 
     /// <summary>
     /// Soft-deletes an event by its unique identifier.

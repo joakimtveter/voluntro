@@ -12,35 +12,33 @@ namespace VoluntroApi.Services;
 public class VenueService(AppDbContext db, ILogger<VenueService> logger) : IVenueService
 {
     /// <inheritdoc />
-    public async Task<PagedResult<VenueBriefDto>> GetAllAsync(GetVenuesQuery query, CancellationToken cancellationToken)
+    public async Task<PagedResult<VenueSummary>> GetAllAsync(GetVenuesQuery query, CancellationToken cancellationToken)
     {
         return await db.Venues
             .AsNoTracking()
             .Where(v => v.IsDeleted == false)
             .OrderBy(v => v.Name)
-            .ToPagedResultAsync( v => new VenueBriefDto
+            .ToPagedResultAsync( v => new VenueSummary
             {
                 Id = v.Id,
                 Name = v.Name,
-                UpdatedAt =  v.UpdatedAt,
-                CreatedAt = v.CreatedAt,
                 IsDeleted =  v.IsDeleted
             }, query.Page, query.PageSize, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<VenueDto?> GetByIdAsync(Guid venueId, CancellationToken cancellationToken, bool includeDeleted)
+    public async Task<VenueDetails?> GetByIdAsync(Guid venueId, CancellationToken cancellationToken, bool includeDeleted)
     {
         return await db.Venues
             .AsNoTracking()
             .Where(v => v.Id == venueId)
             .Where(v => includeDeleted || v.IsDeleted == false)
-            .Select(v => new VenueDto
+            .Select(v => new VenueDetails
             {
                 Id = v.Id,
                 Name = v.Name,
                 Description = v.Description,
-                Address = new AddressDto
+                Address = new Address
                 {
                     StreetAddress = v.StreetAddress,
                     StreetAddress2 = v.StreetAddress2,
@@ -55,7 +53,7 @@ public class VenueService(AppDbContext db, ILogger<VenueService> logger) : IVenu
     }
 
     /// <inheritdoc />
-    public async Task<VenueDto> CreateAsync(CreateVenueRequest request, CancellationToken cancellationToken)
+    public async Task<VenueDetails> CreateAsync(CreateVenueRequest request, CancellationToken cancellationToken)
     {
         var venue = new Venue()
         {
@@ -73,12 +71,12 @@ public class VenueService(AppDbContext db, ILogger<VenueService> logger) : IVenu
         
         db.Venues.Add(venue);
         await db.SaveChangesAsync(cancellationToken);
-        return new VenueDto
+        return new VenueDetails
         {
             Id = venue.Id,
             Name = venue.Name,
             Description = venue.Description,
-            Address = new AddressDto
+            Address = new Address
             {
                 StreetAddress = venue.StreetAddress,
                 StreetAddress2 = venue.StreetAddress2,
@@ -93,7 +91,7 @@ public class VenueService(AppDbContext db, ILogger<VenueService> logger) : IVenu
     }
 
     /// <inheritdoc />
-    public async Task<VenueDto?> UpdateAsync(Guid venueId, UpdateVenueRequest request, CancellationToken cancellationToken)
+    public async Task<VenueDetails?> UpdateAsync(Guid venueId, UpdateVenueRequest request, CancellationToken cancellationToken)
     {
         var venue = await db.Venues.FindAsync([venueId], cancellationToken);
 
@@ -113,12 +111,12 @@ public class VenueService(AppDbContext db, ILogger<VenueService> logger) : IVenu
         venue.UpdatedAt = DateTimeOffset.UtcNow;
         
         await db.SaveChangesAsync(cancellationToken);
-        return new VenueDto
+        return new VenueDetails
         {
             Id = venue.Id,
             Name = venue.Name,
             Description = venue.Description,
-            Address = new AddressDto
+            Address = new Address
             {
                 StreetAddress = venue.StreetAddress,
                 StreetAddress2 = venue.StreetAddress2,
