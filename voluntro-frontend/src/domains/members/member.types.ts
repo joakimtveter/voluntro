@@ -13,10 +13,18 @@ export type MemberBrief = {
   lastName: string;
   dateOfBirth: string;
   legalGender: LegalGenderEnum;
+  tags: Tag[];
   createdAt: string;
   updatedAt: string;
+  isDeleted: boolean;
 };
 
 export type Member = {
   age: number;
 } & MemberBrief;
+
+export type Tag = {
+  id: string;
+  name: string;
+  color: string;
+};

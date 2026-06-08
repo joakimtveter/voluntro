@@ -1,4 +1,4 @@
-import { membershipFormValidationSchema } from "#/domains/group-membership/group-membership.schema.ts";
+import { groupMembershipFormValidationSchema } from "#/domains/group-membership/group-membership.schema.ts";
 import { useAddMembership } from "#/domains/group-membership/use-group-membership.ts";
 import Form from "#/shared/components/forms/form.tsx";
 import { Button } from "#/shared/components/ui/button";
@@ -22,9 +22,9 @@ export default function AddGroupToMemberForm(props: AddGroupToMemberFormProps) {
 
   const form = useAppForm({
     defaultValues: { memberId, groupId: "" },
-    validators: { onSubmit: membershipFormValidationSchema },
+    validators: { onSubmit: groupMembershipFormValidationSchema },
     onSubmit: ({ value }) => {
-      const payload = membershipFormValidationSchema.parse(value);
+      const payload = groupMembershipFormValidationSchema.parse(value);
       mutate(payload, { onSuccess: () => form.reset() });
     },
   });

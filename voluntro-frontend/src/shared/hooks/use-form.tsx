@@ -6,6 +6,7 @@ import { FormActions, ResetButton, SubmitButton } from "#/shared/components/form
 import GroupPickerField from "#/shared/components/forms/group-picker-field.tsx";
 import LegalGenderPickerField from "#/shared/components/forms/legal-gender-picker-field.tsx";
 import MemberPickerField from "#/shared/components/forms/member-picker-field.tsx";
+import TagColorPickerField from "#/shared/components/forms/tag-color-picker-field.tsx";
 import TextAreaField from "#/shared/components/forms/text-area-field.tsx";
 import TextInputField from "#/shared/components/forms/text-input-field.tsx";
 import VenuePickerField from "#/shared/components/forms/venue-picker-field.tsx";
@@ -23,6 +24,7 @@ export const { useAppForm } = createFormHook({
     LegalGenderPicker: LegalGenderPickerField,
     GroupPicker: GroupPickerField,
     MemberPicker: MemberPickerField,
+    ColorPicker: TagColorPickerField,
   },
   formComponents: {
     FormActions,

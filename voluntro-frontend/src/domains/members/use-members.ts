@@ -86,3 +86,29 @@ export function useMemberComboboxQuery(query: string) {
     queryFn: () => memberComboboxQuery(query),
   });
 }
+
+async function addTagToMember(memberId: string, tagId: string) {
+  return await apiFetch(`/members/${memberId}/tags`, { method: "POST", body: { tagId } });
+}
+export function useAddTagToMember() {
+  return useMutation({
+    mutationFn: ({ memberId, tagId }: { memberId: string; tagId: string }) =>
+      addTagToMember(memberId, tagId),
+    onError: (error: ApiError) => {
+      toast.error("Unable to add tag", { description: error.responseBody });
+    },
+  });
+}
+
+async function removeTagFromMember(memberId: string, tagId: string) {
+  return await apiFetch(`/members/${memberId}/tags`, { method: "DELETE", body: { tagId } });
+}
+export function useRemoveTagFromMember() {
+  return useMutation({
+    mutationFn: ({ memberId, tagId }: { memberId: string; tagId: string }) =>
+      removeTagFromMember(memberId, tagId),
+    onError: (error: ApiError) => {
+      toast.error("Unable to remove tag", { description: error.responseBody });
+    },
+  });
+}

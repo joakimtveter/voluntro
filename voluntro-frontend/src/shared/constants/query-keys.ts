@@ -11,6 +11,8 @@ export const ALL_GROUPS = "groups";
 export const SINGLE_GROUP = "group";
 export const GROUPS_MEMBERS = "group-members";
 
+export const ALL_TAGS = "tags";
+
 export const GROUP_QUERY = "group-query";
 export const VENUE_QUERY = "group-query";
 export const MEMBER_QUERY = "member-query";

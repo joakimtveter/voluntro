@@ -24,8 +24,7 @@ export function SidebarLayout({ sidebar, children }: SidebarLayoutProps) {
       </Button>
 
       <aside
-        style={{ background: "hotpink" }}
-        className={`z-40 col-start-1 row-start-2 min-w-50 sm:col-start-1 sm:row-start-1 sm:min-h-dvh ${open ? "block" : "hidden sm:block"}`}
+        className={`z-40 col-start-1 row-start-2 min-w-50 border-r border-border bg-muted/40 sm:col-start-1 sm:row-start-1 sm:h-full ${open ? "block" : "hidden sm:block"}`}
       >
         {sidebar}
       </aside>

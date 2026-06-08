@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import * as React from "react";
+import type { ReactNode } from "react";
 
 import { SidebarLayout } from "#/shared/components/sidebar-layout.tsx";
 
@@ -8,6 +8,7 @@ const navItems = [
   { title: "Groups", to: "/admin/groups" },
   { title: "Events", to: "/admin/events" },
   { title: "Venues", to: "/admin/venues" },
+  { title: "Tags", to: "/admin/tags" },
 ];
 
 function Sidebar() {
@@ -23,7 +24,7 @@ function Sidebar() {
 }
 
 interface AdminLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
