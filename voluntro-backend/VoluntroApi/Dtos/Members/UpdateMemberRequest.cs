@@ -29,6 +29,14 @@ public class UpdateMemberRequest
     public string LastName { get; init; } = string.Empty;
 
     /// <summary>
+    /// Email address of the member.
+    /// </summary>
+    [Required]
+    [MaxLength(254)]
+    [EmailAddress]
+    public string Email { get; init; } = string.Empty;
+
+    /// <summary>
     /// Date of birth of the member, if known.
     /// </summary>
     [NotInFuture]

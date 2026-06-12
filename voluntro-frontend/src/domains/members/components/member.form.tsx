@@ -22,6 +22,7 @@ export default function MemberForm(props: MemberFormProps) {
       firstName: defaultValues?.firstName ?? "",
       middleNames: defaultValues?.middleNames ?? "",
       lastName: defaultValues?.lastName ?? "",
+      email: defaultValues?.email ?? "",
       dateOfBirth: defaultValues?.dateOfBirth ?? "",
       legalGender: (defaultValues?.legalGender?.toLowerCase() as LegalGenderEnum | undefined) ?? LegalGender.unknown,
     },
@@ -70,6 +71,12 @@ export default function MemberForm(props: MemberFormProps) {
         <form.AppField
           name="lastName"
           children={(field) => <field.TextField label="Last name" autoComplete="family-name" />}
+        />
+        <form.AppField
+          name="email"
+          children={(field) => (
+            <field.TextField label="Email" type="email" autoComplete="email" />
+          )}
         />
 
         <form.AppField

@@ -6,6 +6,7 @@ export const memberFormValidationSchema = z.object({
   firstName: z.string().min(1),
   middleNames: z.string().transform((v) => (v.trim() === "" ? null : v)),
   lastName: z.string().min(1),
+  email: z.email().max(254),
   dateOfBirth: z.iso
     .date()
     .or(z.literal("").transform(() => undefined))

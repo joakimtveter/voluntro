@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
 
+import { Badge } from "#/shared/components/ui/badge.tsx";
 import { cn } from "#/shared/lib/utils";
 
 type HeadingProps = {
   level: 1 | 2 | 3 | 4 | 5 | 6;
   size?: "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
+  badge?: string | number;
   className?: string;
   children: ReactNode | ReactNode[];
 };
@@ -27,8 +29,19 @@ const defaultSizeByLevel: Record<number, HeadingProps["size"]> = {
   6: "xs",
 };
 
-export default function Heading({ level, size, className, children }: HeadingProps) {
+export default function Heading({ level, size, badge, className, children }: HeadingProps) {
   const Tag = `h${level}` as const;
   const resolvedSize = size ?? defaultSizeByLevel[level];
-  return <Tag className={cn(sizeClasses[resolvedSize!], className)}>{children}</Tag>;
+  return (
+    <Tag
+      className={cn(
+        sizeClasses[resolvedSize!],
+        badge != null && "inline-flex items-start gap-1",
+        className,
+      )}
+    >
+      {children}
+      {!!badge && <Badge variant="default">{badge}</Badge>}
+    </Tag>
+  );
 }

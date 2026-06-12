@@ -2,8 +2,8 @@ import { format, isValid, parseISO } from "date-fns";
 import { ChevronDownIcon } from "lucide-react";
 import { useId, useState } from "react";
 
-import { Button } from "#/shared/components/ui/button";
-import { Calendar } from "#/shared/components/ui/calendar";
+import { Button } from "#/shared/components/ui/button.tsx";
+import { Calendar } from "#/shared/components/ui/calendar.tsx";
 import {
   Field,
   FieldDescription,
@@ -11,9 +11,9 @@ import {
   FieldLabel,
   FieldLegend,
   FieldSet,
-} from "#/shared/components/ui/field";
-import { Input } from "#/shared/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "#/shared/components/ui/popover";
+} from "#/shared/components/ui/field.tsx";
+import { Input } from "#/shared/components/ui/input.tsx";
+import { Popover, PopoverContent, PopoverTrigger } from "#/shared/components/ui/popover.tsx";
 import { DATE_FORMAT } from "#/shared/constants/constants.ts";
 import { useFieldContext } from "#/shared/hooks/form-context.tsx";
 

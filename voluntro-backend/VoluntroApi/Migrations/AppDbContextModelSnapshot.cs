@@ -109,6 +109,11 @@ namespace VoluntroApi.Migrations
                     b.Property<DateOnly?>("DateOfBirth")
                         .HasColumnType("date");
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(250)

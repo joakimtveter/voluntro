@@ -34,6 +34,14 @@ public class Member
     public string LastName { get; set; } =  string.Empty;
 
     /// <summary>
+    /// Email address of the member
+    /// </summary>
+    [Required]
+    [MaxLength(254)]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    /// <summary>
     /// Date of birth of the member
     /// </summary>
     public DateOnly? DateOfBirth { get; set; }

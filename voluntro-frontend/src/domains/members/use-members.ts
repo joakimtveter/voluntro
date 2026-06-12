@@ -1,24 +1,32 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import type { Member, MemberBrief } from "#/domains/members/member.types.ts";
+import type { LegalGenderEnum, Member, MemberBrief } from "#/domains/members/member.types.ts";
 import type { MemberPayload } from "#/domains/members/members.schema.ts";
 import { ALL_MEMBERS, MEMBER_QUERY, SINGLE_MEMBER } from "#/shared/constants/query-keys.ts";
 import type { ApiError } from "#/shared/lib/fetch/api-error.ts";
 import { apiFetch } from "#/shared/lib/fetch/api-fetch.ts";
 import type { PaginatedList, Pagination, SelectOption } from "#/shared/types/api.types.ts";
 
-async function getMembers(pagination: Pagination) {
-  return await apiFetch<PaginatedList<MemberBrief>>("/members", { query: pagination });
+type MembersQuery = Pagination & {
+  tagIds?: string[];
+  tagFilterMode?: "any" | "all";
+  legalGender?: LegalGenderEnum;
+  sortBy?: "lastName" | "firstName" | "dateOfBirth";
+  sortOrder?: "asc" | "desc";
+};
+
+async function getMembers(query: MembersQuery) {
+  return await apiFetch<PaginatedList<MemberBrief>>("/members", { query });
 }
-export function useMembersQueryOptions(pagination: Pagination) {
+export function useMembersQueryOptions(query: MembersQuery) {
   return queryOptions({
-    queryKey: [ALL_MEMBERS, pagination],
-    queryFn: () => getMembers(pagination),
+    queryKey: [ALL_MEMBERS, query],
+    queryFn: () => getMembers(query),
   });
 }
-export function useMembers(pagination: Pagination) {
-  return useQuery(useMembersQueryOptions(pagination));
+export function useMembers(query: MembersQuery) {
+  return useQuery(useMembersQueryOptions(query));
 }
 
 async function getMemberById(memberId: string) {
@@ -90,10 +98,15 @@ export function useMemberComboboxQuery(query: string) {
 async function addTagToMember(memberId: string, tagId: string) {
   return await apiFetch(`/members/${memberId}/tags`, { method: "POST", body: { tagId } });
 }
-export function useAddTagToMember() {
+export function useAddTagToMember(memberId: string) {
+  const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: ({ memberId, tagId }: { memberId: string; tagId: string }) =>
-      addTagToMember(memberId, tagId),
+    mutationFn: (tagId: string) => addTagToMember(memberId, tagId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [ALL_MEMBERS] });
+      queryClient.invalidateQueries({ queryKey: [SINGLE_MEMBER] });
+    },
     onError: (error: ApiError) => {
       toast.error("Unable to add tag", { description: error.responseBody });
     },
@@ -103,10 +116,15 @@ export function useAddTagToMember() {
 async function removeTagFromMember(memberId: string, tagId: string) {
   return await apiFetch(`/members/${memberId}/tags`, { method: "DELETE", body: { tagId } });
 }
-export function useRemoveTagFromMember() {
+export function useRemoveTagFromMember(memberId: string) {
+  const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: ({ memberId, tagId }: { memberId: string; tagId: string }) =>
-      removeTagFromMember(memberId, tagId),
+    mutationFn: (tagId: string) => removeTagFromMember(memberId, tagId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [ALL_MEMBERS] });
+      queryClient.invalidateQueries({ queryKey: [SINGLE_MEMBER] });
+    },
     onError: (error: ApiError) => {
       toast.error("Unable to remove tag", { description: error.responseBody });
     },

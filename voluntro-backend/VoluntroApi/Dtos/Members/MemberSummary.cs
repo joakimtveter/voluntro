@@ -28,6 +28,11 @@ public class MemberSummary
     public string LastName { get; init; } = string.Empty;
 
     /// <summary>
+    /// Email address of the member.
+    /// </summary>
+    public string Email { get; init; } = string.Empty;
+
+    /// <summary>
     /// Date of birth of the member, if known.
     /// </summary>
     public DateOnly? DateOfBirth { get; init; }

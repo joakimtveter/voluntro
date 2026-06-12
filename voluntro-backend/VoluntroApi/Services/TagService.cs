@@ -11,7 +11,7 @@ public class TagService(AppDbContext db, ILogger<VenueService> logger) : ITagSer
     {
         logger.LogDebug("Getting all tags");
         
-        var tags = await db.Tags.ToListAsync(cancellationToken);
+        var tags = await db.Tags.OrderBy(t => t.Name).ToListAsync(cancellationToken);
         
         logger.LogDebug("Found {Count} tags", tags.Count);
         

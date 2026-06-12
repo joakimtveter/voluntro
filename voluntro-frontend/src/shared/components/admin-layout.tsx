@@ -13,9 +13,9 @@ const navItems = [
 
 function Sidebar() {
   return (
-    <nav className="flex flex-col gap-2 p-4">
+    <nav className="flex flex-col gap-2 py-4">
       {navItems.map((item) => (
-        <Link key={item.to} to={item.to} className="rounded px-3 py-2 hover:underline">
+        <Link key={item.to} to={item.to} className="block px-4 py-2 hover:bg-muted [&.active]:bg-secondary [&.active]:font-medium">
           {item.title}
         </Link>
       ))}

@@ -19,19 +19,37 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
         logger.LogDebug("Querying members Page={Page} PageSize={PageSize} IncludeDeleted={IncludeDeleted} TagIds={TagIds}", query.Page, query.PageSize, includeDeleted, query.TagIds);
 
         var hasTagFilter = query.TagIds is { Count: > 0 };
+        var matchAll = query.TagFilterMode == TagFilterMode.All;
 
-        return await db.Members
+        var baseQuery = db.Members
             .AsNoTracking()
             .Where(m => includeDeleted || !m.IsDeleted)
-            .Where(m => !hasTagFilter || m.MemberTags.Any(mt => query.TagIds!.Contains(mt.TagId)))
-            .OrderBy(m => m.LastName)
-            .ThenBy(m => m.FirstName)
+            .Where(m => !hasTagFilter
+                        || (matchAll
+                            ? query.TagIds!.All(tagId => m.MemberTags.Any(mt => mt.TagId == tagId))
+                            : m.MemberTags.Any(mt => query.TagIds!.Contains(mt.TagId))))
+            .Where(m => query.LegalGender == null || m.LegalGender == query.LegalGender);
+
+        const string nb = "Norwegian_100_CI_AS";
+
+        var orderedQuery = (query.SortBy, query.SortOrder) switch
+        {
+            (MemberSortBy.FirstName, SortDirection.Asc) => baseQuery.OrderBy(m => EF.Functions.Collate(m.FirstName, nb)).ThenBy(m => EF.Functions.Collate(m.LastName, nb)),
+            (MemberSortBy.FirstName, SortDirection.Desc) => baseQuery.OrderByDescending(m => EF.Functions.Collate(m.FirstName, nb)).ThenByDescending(m => EF.Functions.Collate(m.LastName, nb)),
+            (MemberSortBy.DateOfBirth, SortDirection.Asc) => baseQuery.OrderBy(m => m.DateOfBirth),
+            (MemberSortBy.DateOfBirth, SortDirection.Desc) => baseQuery.OrderByDescending(m => m.DateOfBirth),
+            (MemberSortBy.LastName, SortDirection.Desc) => baseQuery.OrderByDescending(m => EF.Functions.Collate(m.LastName, nb)).ThenByDescending(m => EF.Functions.Collate(m.FirstName, nb)),
+            _ => baseQuery.OrderBy(m => EF.Functions.Collate(m.LastName, nb)).ThenBy(m => EF.Functions.Collate(m.FirstName, nb)),
+        };
+
+        return await orderedQuery
             .ToPagedResultAsync(m => new MemberSummary
             {
                 Id = m.Id,
                 FirstName = m.FirstName,
                 MiddleNames = m.MiddleNames,
                 LastName = m.LastName,
+                Email = m.Email,
                 DateOfBirth = m.DateOfBirth,
                 Tags = m.MemberTags.Select(mt => new TagDto { Id = mt.Tag.Id, Name = mt.Tag.Name, Color = mt.Tag.Color }).ToList(),
                 LegalGender = m.LegalGender,
@@ -48,6 +66,8 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
 
         var member = await db.Members
             .AsNoTracking()
+            .Include(m => m.MemberTags)
+            .ThenInclude(mt => mt.Tag)
             .Where(m => m.Id == memberId && (includeDeleted || !m.IsDeleted))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -65,6 +85,7 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
             FirstName = request.FirstName.Trim(),
             MiddleNames = request.MiddleNames?.Trim(),
             LastName = request.LastName.Trim(),
+            Email = request.Email.Trim(),
             DateOfBirth = request.DateOfBirth,
             LegalGender = request.LegalGender,
             CreatedAt = now,
@@ -93,6 +114,7 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
         member.FirstName = request.FirstName.Trim();
         member.MiddleNames = request.MiddleNames?.Trim();
         member.LastName = request.LastName.Trim();
+        member.Email = request.Email.Trim();
         member.DateOfBirth = request.DateOfBirth;
         member.LegalGender = request.LegalGender;
         member.UpdatedAt = DateTimeOffset.UtcNow;
@@ -134,6 +156,7 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
         member.FirstName = "[deleted]";
         member.MiddleNames = null;
         member.LastName = "[deleted]";
+        member.Email = $"deleted+{member.Id:N}@voluntro.local";
         member.DateOfBirth = null;
         member.LegalGender = default;
         member.IsDeleted = true;
@@ -227,7 +250,9 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
         FirstName = m.FirstName,
         MiddleNames = m.MiddleNames,
         LastName = m.LastName,
+        Email = m.Email,
         DateOfBirth = m.DateOfBirth,
+        Tags = m.MemberTags.Select(mt => new TagDto { Id = mt.Tag.Id, Name = mt.Tag.Name, Color = mt.Tag.Color }).ToList(),
         LegalGender = m.LegalGender,
         CreatedAt = m.CreatedAt,
         UpdatedAt = m.UpdatedAt,

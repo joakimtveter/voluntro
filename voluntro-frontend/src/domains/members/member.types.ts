@@ -11,6 +11,7 @@ export type MemberBrief = {
   firstName: string;
   middleNames: string | null;
   lastName: string;
+  email: string;
   dateOfBirth: string;
   legalGender: LegalGenderEnum;
   tags: Tag[];
