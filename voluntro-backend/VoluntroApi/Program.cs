@@ -26,6 +26,7 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(
     builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IMemberService, MemberService>();
+builder.Services.AddScoped<IMemberTypeService, MemberTypeService>();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IVenueService, VenueService>();
 builder.Services.AddScoped<IQueryService, QueryService>();
