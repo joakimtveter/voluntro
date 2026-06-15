@@ -25,21 +25,40 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     /// <summary>Gets the tag table.</summary>
     public DbSet<Tag> Tags => Set<Tag>();
     
+    /// <summary>Gets the MemberTypes table.</summary>
+    public DbSet<MemberType> MemberTypes => Set<MemberType>();
+    
     /// <summary>Gets the member-group membership join table.</summary>
     public DbSet<MemberGroup> MemberGroups => Set<MemberGroup>();
     
     /// <summary>Gets the member-tags join table.</summary>
     public DbSet<MemberTag> MemberTags => Set<MemberTag>();
 
+    private static readonly Guid DefaultMemberTypeId = new("019ebbd6-fca1-73e0-9ec9-181a6ea57fc8");
+    
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<MemberType>().Property(mt => mt.Id).HasValueGenerator<GuidV7Generator>();
         modelBuilder.Entity<Member>().Property(m => m.Id).HasValueGenerator<GuidV7Generator>();
         modelBuilder.Entity<Event>().Property(e => e.Id).HasValueGenerator<GuidV7Generator>();
         modelBuilder.Entity<Venue>().Property(v => v.Id).HasValueGenerator<GuidV7Generator>();
         modelBuilder.Entity<Group>().Property(g => g.Id).HasValueGenerator<GuidV7Generator>();
         modelBuilder.Entity<Tag>().Property(t => t.Id).HasValueGenerator<GuidV7Generator>();
+        
+        modelBuilder.Entity<MemberType>().HasData(new MemberType
+        {
+            Id = DefaultMemberTypeId,
+            Name = "Member",
+            IsDefault = true,
+        });
 
+        modelBuilder.Entity<Member>()
+            .HasOne(m => m.MemberType)
+            .WithMany()
+            .HasForeignKey(m => m.MemberTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
         modelBuilder.Entity<MemberTag>(entity =>
         {
             entity.HasKey(mt => new { mt.MemberId, mt.TagId });

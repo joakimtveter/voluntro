@@ -9,9 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as DesignRouteImport } from './routes/design'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VenuesIndexRouteImport } from './routes/venues/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as MembersIndexRouteImport } from './routes/members/index'
 import { Route as GroupsIndexRouteImport } from './routes/groups/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
@@ -25,17 +28,30 @@ import { Route as AdminMembersRouteImport } from './routes/admin/members'
 import { Route as AdminGroupsRouteImport } from './routes/admin/groups'
 import { Route as AdminEventsRouteImport } from './routes/admin/events'
 import { Route as VenuesVenueIdIndexRouteImport } from './routes/venues/$venueId/index'
+import { Route as SettingsTagsIndexRouteImport } from './routes/settings/tags/index'
+import { Route as SettingsMemberTypesIndexRouteImport } from './routes/settings/member-types/index'
 import { Route as MembersMemberIdIndexRouteImport } from './routes/members/$memberId/index'
 import { Route as GroupsGroupIdIndexRouteImport } from './routes/groups/$groupId/index'
 import { Route as EventsEventIdIndexRouteImport } from './routes/events/$eventId/index'
-import { Route as AdminTagsIndexRouteImport } from './routes/admin/tags.index'
 import { Route as VenuesVenueIdEditRouteImport } from './routes/venues/$venueId/edit'
+import { Route as SettingsTagsAddRouteImport } from './routes/settings/tags/add'
+import { Route as SettingsMemberTypesAddRouteImport } from './routes/settings/member-types/add'
 import { Route as MembersMemberIdEditRouteImport } from './routes/members/$memberId/edit'
 import { Route as GroupsGroupIdEditRouteImport } from './routes/groups/$groupId/edit'
 import { Route as EventsEventIdEditRouteImport } from './routes/events/$eventId/edit'
-import { Route as AdminTagsAddRouteImport } from './routes/admin/tags.add'
-import { Route as AdminTagsTagIdEditRouteImport } from './routes/admin/tags.$tagId.edit'
+import { Route as SettingsTagsTagIdEditRouteImport } from './routes/settings/tags/$tagId/edit'
+import { Route as SettingsMemberTypesMemberTypeIdEditRouteImport } from './routes/settings/member-types/$memberTypeId/edit'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignRoute = DesignRouteImport.update({
+  id: '/design',
+  path: '/design',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -50,6 +66,11 @@ const VenuesIndexRoute = VenuesIndexRouteImport.update({
   id: '/venues/',
   path: '/venues/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const MembersIndexRoute = MembersIndexRouteImport.update({
   id: '/members/',
@@ -116,6 +137,17 @@ const VenuesVenueIdIndexRoute = VenuesVenueIdIndexRouteImport.update({
   path: '/venues/$venueId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsTagsIndexRoute = SettingsTagsIndexRouteImport.update({
+  id: '/tags/',
+  path: '/tags/',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsMemberTypesIndexRoute =
+  SettingsMemberTypesIndexRouteImport.update({
+    id: '/member-types/',
+    path: '/member-types/',
+    getParentRoute: () => SettingsRoute,
+  } as any)
 const MembersMemberIdIndexRoute = MembersMemberIdIndexRouteImport.update({
   id: '/members/$memberId/',
   path: '/members/$memberId/',
@@ -131,15 +163,20 @@ const EventsEventIdIndexRoute = EventsEventIdIndexRouteImport.update({
   path: '/events/$eventId/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminTagsIndexRoute = AdminTagsIndexRouteImport.update({
-  id: '/tags/',
-  path: '/tags/',
-  getParentRoute: () => AdminRoute,
-} as any)
 const VenuesVenueIdEditRoute = VenuesVenueIdEditRouteImport.update({
   id: '/venues/$venueId/edit',
   path: '/venues/$venueId/edit',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsTagsAddRoute = SettingsTagsAddRouteImport.update({
+  id: '/tags/add',
+  path: '/tags/add',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsMemberTypesAddRoute = SettingsMemberTypesAddRouteImport.update({
+  id: '/member-types/add',
+  path: '/member-types/add',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const MembersMemberIdEditRoute = MembersMemberIdEditRouteImport.update({
   id: '/members/$memberId/edit',
@@ -156,20 +193,23 @@ const EventsEventIdEditRoute = EventsEventIdEditRouteImport.update({
   path: '/events/$eventId/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminTagsAddRoute = AdminTagsAddRouteImport.update({
-  id: '/tags/add',
-  path: '/tags/add',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminTagsTagIdEditRoute = AdminTagsTagIdEditRouteImport.update({
+const SettingsTagsTagIdEditRoute = SettingsTagsTagIdEditRouteImport.update({
   id: '/tags/$tagId/edit',
   path: '/tags/$tagId/edit',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsMemberTypesMemberTypeIdEditRoute =
+  SettingsMemberTypesMemberTypeIdEditRouteImport.update({
+    id: '/member-types/$memberTypeId/edit',
+    path: '/member-types/$memberTypeId/edit',
+    getParentRoute: () => SettingsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/design': typeof DesignRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/members': typeof AdminMembersRoute
@@ -182,21 +222,26 @@ export interface FileRoutesByFullPath {
   '/events/': typeof EventsIndexRoute
   '/groups/': typeof GroupsIndexRoute
   '/members/': typeof MembersIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/venues/': typeof VenuesIndexRoute
-  '/admin/tags/add': typeof AdminTagsAddRoute
   '/events/$eventId/edit': typeof EventsEventIdEditRoute
   '/groups/$groupId/edit': typeof GroupsGroupIdEditRoute
   '/members/$memberId/edit': typeof MembersMemberIdEditRoute
+  '/settings/member-types/add': typeof SettingsMemberTypesAddRoute
+  '/settings/tags/add': typeof SettingsTagsAddRoute
   '/venues/$venueId/edit': typeof VenuesVenueIdEditRoute
-  '/admin/tags/': typeof AdminTagsIndexRoute
   '/events/$eventId/': typeof EventsEventIdIndexRoute
   '/groups/$groupId/': typeof GroupsGroupIdIndexRoute
   '/members/$memberId/': typeof MembersMemberIdIndexRoute
+  '/settings/member-types/': typeof SettingsMemberTypesIndexRoute
+  '/settings/tags/': typeof SettingsTagsIndexRoute
   '/venues/$venueId/': typeof VenuesVenueIdIndexRoute
-  '/admin/tags/$tagId/edit': typeof AdminTagsTagIdEditRoute
+  '/settings/member-types/$memberTypeId/edit': typeof SettingsMemberTypesMemberTypeIdEditRoute
+  '/settings/tags/$tagId/edit': typeof SettingsTagsTagIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/design': typeof DesignRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/members': typeof AdminMembersRoute
@@ -209,23 +254,29 @@ export interface FileRoutesByTo {
   '/events': typeof EventsIndexRoute
   '/groups': typeof GroupsIndexRoute
   '/members': typeof MembersIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/venues': typeof VenuesIndexRoute
-  '/admin/tags/add': typeof AdminTagsAddRoute
   '/events/$eventId/edit': typeof EventsEventIdEditRoute
   '/groups/$groupId/edit': typeof GroupsGroupIdEditRoute
   '/members/$memberId/edit': typeof MembersMemberIdEditRoute
+  '/settings/member-types/add': typeof SettingsMemberTypesAddRoute
+  '/settings/tags/add': typeof SettingsTagsAddRoute
   '/venues/$venueId/edit': typeof VenuesVenueIdEditRoute
-  '/admin/tags': typeof AdminTagsIndexRoute
   '/events/$eventId': typeof EventsEventIdIndexRoute
   '/groups/$groupId': typeof GroupsGroupIdIndexRoute
   '/members/$memberId': typeof MembersMemberIdIndexRoute
+  '/settings/member-types': typeof SettingsMemberTypesIndexRoute
+  '/settings/tags': typeof SettingsTagsIndexRoute
   '/venues/$venueId': typeof VenuesVenueIdIndexRoute
-  '/admin/tags/$tagId/edit': typeof AdminTagsTagIdEditRoute
+  '/settings/member-types/$memberTypeId/edit': typeof SettingsMemberTypesMemberTypeIdEditRoute
+  '/settings/tags/$tagId/edit': typeof SettingsTagsTagIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/design': typeof DesignRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/members': typeof AdminMembersRoute
@@ -238,24 +289,30 @@ export interface FileRoutesById {
   '/events/': typeof EventsIndexRoute
   '/groups/': typeof GroupsIndexRoute
   '/members/': typeof MembersIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/venues/': typeof VenuesIndexRoute
-  '/admin/tags/add': typeof AdminTagsAddRoute
   '/events/$eventId/edit': typeof EventsEventIdEditRoute
   '/groups/$groupId/edit': typeof GroupsGroupIdEditRoute
   '/members/$memberId/edit': typeof MembersMemberIdEditRoute
+  '/settings/member-types/add': typeof SettingsMemberTypesAddRoute
+  '/settings/tags/add': typeof SettingsTagsAddRoute
   '/venues/$venueId/edit': typeof VenuesVenueIdEditRoute
-  '/admin/tags/': typeof AdminTagsIndexRoute
   '/events/$eventId/': typeof EventsEventIdIndexRoute
   '/groups/$groupId/': typeof GroupsGroupIdIndexRoute
   '/members/$memberId/': typeof MembersMemberIdIndexRoute
+  '/settings/member-types/': typeof SettingsMemberTypesIndexRoute
+  '/settings/tags/': typeof SettingsTagsIndexRoute
   '/venues/$venueId/': typeof VenuesVenueIdIndexRoute
-  '/admin/tags/$tagId/edit': typeof AdminTagsTagIdEditRoute
+  '/settings/member-types/$memberTypeId/edit': typeof SettingsMemberTypesMemberTypeIdEditRoute
+  '/settings/tags/$tagId/edit': typeof SettingsTagsTagIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
+    | '/design'
+    | '/settings'
     | '/admin/events'
     | '/admin/groups'
     | '/admin/members'
@@ -268,21 +325,26 @@ export interface FileRouteTypes {
     | '/events/'
     | '/groups/'
     | '/members/'
+    | '/settings/'
     | '/venues/'
-    | '/admin/tags/add'
     | '/events/$eventId/edit'
     | '/groups/$groupId/edit'
     | '/members/$memberId/edit'
+    | '/settings/member-types/add'
+    | '/settings/tags/add'
     | '/venues/$venueId/edit'
-    | '/admin/tags/'
     | '/events/$eventId/'
     | '/groups/$groupId/'
     | '/members/$memberId/'
+    | '/settings/member-types/'
+    | '/settings/tags/'
     | '/venues/$venueId/'
-    | '/admin/tags/$tagId/edit'
+    | '/settings/member-types/$memberTypeId/edit'
+    | '/settings/tags/$tagId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/design'
     | '/admin/events'
     | '/admin/groups'
     | '/admin/members'
@@ -295,22 +357,28 @@ export interface FileRouteTypes {
     | '/events'
     | '/groups'
     | '/members'
+    | '/settings'
     | '/venues'
-    | '/admin/tags/add'
     | '/events/$eventId/edit'
     | '/groups/$groupId/edit'
     | '/members/$memberId/edit'
+    | '/settings/member-types/add'
+    | '/settings/tags/add'
     | '/venues/$venueId/edit'
-    | '/admin/tags'
     | '/events/$eventId'
     | '/groups/$groupId'
     | '/members/$memberId'
+    | '/settings/member-types'
+    | '/settings/tags'
     | '/venues/$venueId'
-    | '/admin/tags/$tagId/edit'
+    | '/settings/member-types/$memberTypeId/edit'
+    | '/settings/tags/$tagId/edit'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/design'
+    | '/settings'
     | '/admin/events'
     | '/admin/groups'
     | '/admin/members'
@@ -323,23 +391,29 @@ export interface FileRouteTypes {
     | '/events/'
     | '/groups/'
     | '/members/'
+    | '/settings/'
     | '/venues/'
-    | '/admin/tags/add'
     | '/events/$eventId/edit'
     | '/groups/$groupId/edit'
     | '/members/$memberId/edit'
+    | '/settings/member-types/add'
+    | '/settings/tags/add'
     | '/venues/$venueId/edit'
-    | '/admin/tags/'
     | '/events/$eventId/'
     | '/groups/$groupId/'
     | '/members/$memberId/'
+    | '/settings/member-types/'
+    | '/settings/tags/'
     | '/venues/$venueId/'
-    | '/admin/tags/$tagId/edit'
+    | '/settings/member-types/$memberTypeId/edit'
+    | '/settings/tags/$tagId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  DesignRoute: typeof DesignRoute
+  SettingsRoute: typeof SettingsRouteWithChildren
   EventsAddRoute: typeof EventsAddRoute
   GroupsAddRoute: typeof GroupsAddRoute
   MembersAddRoute: typeof MembersAddRoute
@@ -360,6 +434,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design': {
+      id: '/design'
+      path: '/design'
+      fullPath: '/design'
+      preLoaderRoute: typeof DesignRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -380,6 +468,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/venues/'
       preLoaderRoute: typeof VenuesIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/members/': {
       id: '/members/'
@@ -472,6 +567,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VenuesVenueIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/tags/': {
+      id: '/settings/tags/'
+      path: '/tags'
+      fullPath: '/settings/tags/'
+      preLoaderRoute: typeof SettingsTagsIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/member-types/': {
+      id: '/settings/member-types/'
+      path: '/member-types'
+      fullPath: '/settings/member-types/'
+      preLoaderRoute: typeof SettingsMemberTypesIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/members/$memberId/': {
       id: '/members/$memberId/'
       path: '/members/$memberId'
@@ -493,19 +602,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsEventIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/tags/': {
-      id: '/admin/tags/'
-      path: '/tags'
-      fullPath: '/admin/tags/'
-      preLoaderRoute: typeof AdminTagsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/venues/$venueId/edit': {
       id: '/venues/$venueId/edit'
       path: '/venues/$venueId/edit'
       fullPath: '/venues/$venueId/edit'
       preLoaderRoute: typeof VenuesVenueIdEditRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/settings/tags/add': {
+      id: '/settings/tags/add'
+      path: '/tags/add'
+      fullPath: '/settings/tags/add'
+      preLoaderRoute: typeof SettingsTagsAddRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/member-types/add': {
+      id: '/settings/member-types/add'
+      path: '/member-types/add'
+      fullPath: '/settings/member-types/add'
+      preLoaderRoute: typeof SettingsMemberTypesAddRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/members/$memberId/edit': {
       id: '/members/$memberId/edit'
@@ -528,19 +644,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsEventIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/tags/add': {
-      id: '/admin/tags/add'
-      path: '/tags/add'
-      fullPath: '/admin/tags/add'
-      preLoaderRoute: typeof AdminTagsAddRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/tags/$tagId/edit': {
-      id: '/admin/tags/$tagId/edit'
+    '/settings/tags/$tagId/edit': {
+      id: '/settings/tags/$tagId/edit'
       path: '/tags/$tagId/edit'
-      fullPath: '/admin/tags/$tagId/edit'
-      preLoaderRoute: typeof AdminTagsTagIdEditRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/settings/tags/$tagId/edit'
+      preLoaderRoute: typeof SettingsTagsTagIdEditRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/member-types/$memberTypeId/edit': {
+      id: '/settings/member-types/$memberTypeId/edit'
+      path: '/member-types/$memberTypeId/edit'
+      fullPath: '/settings/member-types/$memberTypeId/edit'
+      preLoaderRoute: typeof SettingsMemberTypesMemberTypeIdEditRouteImport
+      parentRoute: typeof SettingsRoute
     }
   }
 }
@@ -551,9 +667,6 @@ interface AdminRouteChildren {
   AdminMembersRoute: typeof AdminMembersRoute
   AdminVenuesRoute: typeof AdminVenuesRoute
   AdminIndexRoute: typeof AdminIndexRoute
-  AdminTagsAddRoute: typeof AdminTagsAddRoute
-  AdminTagsIndexRoute: typeof AdminTagsIndexRoute
-  AdminTagsTagIdEditRoute: typeof AdminTagsTagIdEditRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -562,16 +675,40 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminMembersRoute: AdminMembersRoute,
   AdminVenuesRoute: AdminVenuesRoute,
   AdminIndexRoute: AdminIndexRoute,
-  AdminTagsAddRoute: AdminTagsAddRoute,
-  AdminTagsIndexRoute: AdminTagsIndexRoute,
-  AdminTagsTagIdEditRoute: AdminTagsTagIdEditRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface SettingsRouteChildren {
+  SettingsIndexRoute: typeof SettingsIndexRoute
+  SettingsMemberTypesAddRoute: typeof SettingsMemberTypesAddRoute
+  SettingsTagsAddRoute: typeof SettingsTagsAddRoute
+  SettingsMemberTypesIndexRoute: typeof SettingsMemberTypesIndexRoute
+  SettingsTagsIndexRoute: typeof SettingsTagsIndexRoute
+  SettingsMemberTypesMemberTypeIdEditRoute: typeof SettingsMemberTypesMemberTypeIdEditRoute
+  SettingsTagsTagIdEditRoute: typeof SettingsTagsTagIdEditRoute
+}
+
+const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsIndexRoute: SettingsIndexRoute,
+  SettingsMemberTypesAddRoute: SettingsMemberTypesAddRoute,
+  SettingsTagsAddRoute: SettingsTagsAddRoute,
+  SettingsMemberTypesIndexRoute: SettingsMemberTypesIndexRoute,
+  SettingsTagsIndexRoute: SettingsTagsIndexRoute,
+  SettingsMemberTypesMemberTypeIdEditRoute:
+    SettingsMemberTypesMemberTypeIdEditRoute,
+  SettingsTagsTagIdEditRoute: SettingsTagsTagIdEditRoute,
+}
+
+const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
+  SettingsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  DesignRoute: DesignRoute,
+  SettingsRoute: SettingsRouteWithChildren,
   EventsAddRoute: EventsAddRoute,
   GroupsAddRoute: GroupsAddRoute,
   MembersAddRoute: MembersAddRoute,

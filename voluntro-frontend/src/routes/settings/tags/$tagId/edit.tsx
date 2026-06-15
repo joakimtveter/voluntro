@@ -6,7 +6,7 @@ import PageWrapper from "#/shared/components/page-wrapper.tsx";
 import ErrorPage from "#/shared/pages/error-page.tsx";
 import LoadingPage from "#/shared/pages/loading-page.tsx";
 
-export const Route = createFileRoute("/admin/tags/$tagId/edit")({
+export const Route = createFileRoute("/settings/tags/$tagId/edit")({
   component: RouteComponent,
 });
 

@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
+import { SettingsIcon } from "lucide-react";
 
 import { ThemeSwitcher } from "#/shared/components/theme-switcher.tsx";
+import { IconLinkButton } from "#/shared/components/ui/icon-link-button.tsx";
 
 export default function SiteHeader() {
   return (
@@ -13,7 +15,12 @@ export default function SiteHeader() {
         <Link to="/groups">Groups</Link>
         <Link to="/admin">Admin</Link>
       </nav>
-      <ThemeSwitcher />
+      <div className="flex items-center gap-2">
+        <IconLinkButton to="/settings" aria-label="Settings" size="icon-lg">
+          <SettingsIcon className="size-5" />
+        </IconLinkButton>
+        <ThemeSwitcher />
+      </div>
     </header>
   );
 }

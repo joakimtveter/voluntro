@@ -13,6 +13,8 @@ export const GROUPS_MEMBERS = "group-members";
 
 export const ALL_TAGS = "tags";
 
+export const ALL_MEMBER_TYPES = "member-types";
+
 export const GROUP_QUERY = "group-query";
 export const VENUE_QUERY = "group-query";
 export const MEMBER_QUERY = "member-query";

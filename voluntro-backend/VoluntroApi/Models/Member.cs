@@ -36,10 +36,9 @@ public class Member
     /// <summary>
     /// Email address of the member
     /// </summary>
-    [Required]
     [MaxLength(254)]
     [EmailAddress]
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; }
 
     /// <summary>
     /// Date of birth of the member
@@ -50,6 +49,13 @@ public class Member
     /// Gender of the member
     /// </summary>
     public LegalGender LegalGender {get; set;}
+    
+    /// <summary>
+    /// Gender of the member
+    /// </summary>
+    public Guid MemberTypeId { get; set; }
+    
+    public MemberType MemberType { get; set; } = null!;
     
     /// <summary>
     /// List of tags

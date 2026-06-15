@@ -56,6 +56,7 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
                 CreatedAt = m.CreatedAt,
                 UpdatedAt = m.UpdatedAt,
                 IsDeleted = m.IsDeleted,
+                MemberTypeId = m.MemberTypeId,
             }, query.Page, query.PageSize, cancellationToken);
     }
 
@@ -79,15 +80,22 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
     {
         logger.LogDebug("Creating member");
 
+        var memberTypeId = request.MemberTypeId
+            ?? await db.MemberTypes
+                .Where(mt => mt.IsDefault)
+                .Select(mt => mt.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
         var now = DateTimeOffset.UtcNow;
         var member = new Member
         {
             FirstName = request.FirstName.Trim(),
             MiddleNames = request.MiddleNames?.Trim(),
             LastName = request.LastName.Trim(),
-            Email = request.Email.Trim(),
+            Email = request.Email?.Trim(),
             DateOfBirth = request.DateOfBirth,
             LegalGender = request.LegalGender,
+            MemberTypeId = memberTypeId,
             CreatedAt = now,
             UpdatedAt = now,
         };
@@ -114,9 +122,11 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
         member.FirstName = request.FirstName.Trim();
         member.MiddleNames = request.MiddleNames?.Trim();
         member.LastName = request.LastName.Trim();
-        member.Email = request.Email.Trim();
+        member.Email = request.Email?.Trim();
         member.DateOfBirth = request.DateOfBirth;
         member.LegalGender = request.LegalGender;
+        if (request.MemberTypeId.HasValue)
+            member.MemberTypeId = request.MemberTypeId.Value;
         member.UpdatedAt = DateTimeOffset.UtcNow;
 
         await db.SaveChangesAsync(cancellationToken);
@@ -257,5 +267,6 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
         CreatedAt = m.CreatedAt,
         UpdatedAt = m.UpdatedAt,
         IsDeleted = m.IsDeleted,
+        MemberTypeId = m.MemberTypeId,
     };
 }

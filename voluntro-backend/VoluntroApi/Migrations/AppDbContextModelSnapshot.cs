@@ -17,7 +17,7 @@ namespace VoluntroApi.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.8")
+                .HasAnnotation("ProductVersion", "10.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -110,7 +110,6 @@ namespace VoluntroApi.Migrations
                         .HasColumnType("date");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasMaxLength(254)
                         .HasColumnType("nvarchar(254)");
 
@@ -130,6 +129,9 @@ namespace VoluntroApi.Migrations
                     b.Property<int>("LegalGender")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("MemberTypeId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("MiddleNames")
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
@@ -138,6 +140,8 @@ namespace VoluntroApi.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MemberTypeId");
 
                     b.ToTable("Members");
                 });
@@ -173,6 +177,33 @@ namespace VoluntroApi.Migrations
                     b.HasIndex("TagId");
 
                     b.ToTable("MemberTags");
+                });
+
+            modelBuilder.Entity("VoluntroApi.Models.MemberType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MemberTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("019ebbd6-fca1-73e0-9ec9-181a6ea57fc8"),
+                            IsDefault = true,
+                            Name = "Member"
+                        });
                 });
 
             modelBuilder.Entity("VoluntroApi.Models.Tag", b =>
@@ -268,6 +299,17 @@ namespace VoluntroApi.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ParentGroup");
+                });
+
+            modelBuilder.Entity("VoluntroApi.Models.Member", b =>
+                {
+                    b.HasOne("VoluntroApi.Models.MemberType", "MemberType")
+                        .WithMany()
+                        .HasForeignKey("MemberTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("MemberType");
                 });
 
             modelBuilder.Entity("VoluntroApi.Models.MemberGroup", b =>

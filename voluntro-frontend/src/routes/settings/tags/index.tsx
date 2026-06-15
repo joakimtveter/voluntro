@@ -9,7 +9,7 @@ import { LinkButton } from "#/shared/components/ui/link-button.tsx";
 import ErrorPage from "#/shared/pages/error-page.tsx";
 import LoadingPage from "#/shared/pages/loading-page.tsx";
 
-export const Route = createFileRoute("/admin/tags/")({
+export const Route = createFileRoute("/settings/tags/")({
   component: RouteComponent,
 });
 
@@ -18,7 +18,7 @@ function RouteComponent() {
 
   if (tags) {
     return (
-      <PageWrapper title="Tags" actions={<LinkButton to="/admin/tags/add">Add tag</LinkButton>}>
+      <PageWrapper title="Tags" actions={<LinkButton to="/settings/tags/add">Add tag</LinkButton>}>
         {tags.length === 0 ? (
           <p className="text-muted-foreground py-10 text-center text-sm">No tags found.</p>
         ) : (
@@ -38,7 +38,7 @@ function RouteComponent() {
                     <IconButton
                       icon={<PencilIcon />}
                       tooltipContent={`Edit ${tag.name}`}
-                      render={<Link to="/admin/tags/$tagId/edit" params={{ tagId: tag.id }} />}
+                      render={<Link to="/settings/tags/$tagId/edit" params={{ tagId: tag.id }} />}
                     />
                     <DeleteTagButton tagId={tag.id} tagName={tag.name} />
                   </div>

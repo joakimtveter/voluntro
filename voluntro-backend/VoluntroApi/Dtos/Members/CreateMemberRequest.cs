@@ -31,10 +31,9 @@ public class CreateMemberRequest
     /// <summary>
     /// Email address of the member.
     /// </summary>
-    [Required]
     [MaxLength(254)]
     [EmailAddress]
-    public string Email { get; init; } = string.Empty;
+    public string? Email { get; init; }
 
     /// <summary>
     /// Date of birth of the member, if known.
@@ -46,4 +45,9 @@ public class CreateMemberRequest
     /// Gender of the member.
     /// </summary>
     public LegalGender LegalGender { get; init; }
+
+    /// <summary>
+    /// Member type to assign. Defaults to the default member type if omitted.
+    /// </summary>
+    public Guid? MemberTypeId { get; init; }
 }

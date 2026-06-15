@@ -11,10 +11,11 @@ export type MemberBrief = {
   firstName: string;
   middleNames: string | null;
   lastName: string;
-  email: string;
+  email: string | null;
   dateOfBirth: string;
   legalGender: LegalGenderEnum;
   tags: Tag[];
+  memberTypeId: string;
   createdAt: string;
   updatedAt: string;
   isDeleted: boolean;

@@ -113,6 +113,24 @@ export function useAddTagToMember(memberId: string) {
   });
 }
 
+async function deleteMember(memberId: string) {
+  return await apiFetch(`/members/${memberId}`, { method: "DELETE" });
+}
+export function useDeleteMember(memberId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: ["delete-member", { memberId }],
+    mutationFn: () => deleteMember(memberId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [ALL_MEMBERS] });
+      toast.success("Member deleted");
+    },
+    onError: (error: ApiError) => {
+      toast.error("Unable to delete member", { description: error.responseBody });
+    },
+  });
+}
+
 async function removeTagFromMember(memberId: string, tagId: string) {
   return await apiFetch(`/members/${memberId}/tags`, { method: "DELETE", body: { tagId } });
 }
@@ -124,6 +142,7 @@ export function useRemoveTagFromMember(memberId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [ALL_MEMBERS] });
       queryClient.invalidateQueries({ queryKey: [SINGLE_MEMBER] });
+      toast.success("Tag removed");
     },
     onError: (error: ApiError) => {
       toast.error("Unable to remove tag", { description: error.responseBody });

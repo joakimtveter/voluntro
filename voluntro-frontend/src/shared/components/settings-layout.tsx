@@ -4,17 +4,15 @@ import { SidebarLayout } from "#/shared/components/sidebar-layout.tsx";
 import { SidebarNav } from "#/shared/components/sidebar-nav.tsx";
 
 const navItems = [
-  { title: "Members", to: "/admin/members" },
-  { title: "Groups", to: "/admin/groups" },
-  { title: "Events", to: "/admin/events" },
-  { title: "Venues", to: "/admin/venues" },
+  { title: "Member types", to: "/settings/member-types" },
+  { title: "Tags", to: "/settings/tags" },
 ];
 
-interface AdminLayoutProps {
+interface LayoutProps {
   children: ReactNode;
 }
 
-export function AdminLayout({ children }: AdminLayoutProps) {
+export function SettingsLayout({ children }: LayoutProps) {
   return (
     <SidebarLayout sidebar={<SidebarNav items={navItems} />}>{children}</SidebarLayout>
   );

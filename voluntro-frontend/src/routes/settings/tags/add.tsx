@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import TagForm from "#/domains/tags/tag.form.tsx";
 import PageWrapper from "#/shared/components/page-wrapper.tsx";
 
-export const Route = createFileRoute("/admin/tags/add")({
+export const Route = createFileRoute("/settings/tags/add")({
   component: RouteComponent,
 });
 

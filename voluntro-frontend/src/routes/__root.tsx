@@ -11,6 +11,7 @@ import SiteFooter from "#/shared/components/site-footer.tsx";
 import SiteHeader from "#/shared/components/site-header.tsx";
 import { Toaster } from "#/shared/components/ui/sonner.tsx";
 import { TooltipProvider } from "#/shared/components/ui/tooltip";
+import NotFoundPage from "#/shared/pages/not-found-page.tsx";
 
 import { queryClient } from "../router";
 
@@ -40,6 +41,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
   }),
   shellComponent: RootDocument,
+  notFoundComponent: () => NotFoundPage,
 });
 
 function RootDocument({ children }: { children: ReactNode }) {

@@ -6,7 +6,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { EyeIcon, PencilIcon, XIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import * as z from "zod";
 
 import type { LegalGenderEnum, MemberBrief } from "#/domains/members/member.types.ts";
 import { useMembers } from "#/domains/members/use-members.ts";
@@ -52,7 +53,18 @@ import { cn } from "#/shared/lib/utils.ts";
 import ErrorPage from "#/shared/pages/error-page.tsx";
 import LoadingPage from "#/shared/pages/loading-page.tsx";
 
+const membersSearchSchema = z.object({
+  sort: z
+    .enum(["lastName-asc", "lastName-desc", "firstName-asc", "firstName-desc", "dateOfBirth-asc", "dateOfBirth-desc"])
+    .catch("lastName-asc")
+    .default("lastName-asc"),
+  gender: z.enum(["all", "female", "male", "unknown"]).catch("all").default("all"),
+  tagIds: z.array(z.string()).catch([]).default([]),
+  tagFilterMode: z.enum(["any", "all"]).catch("any").default("any"),
+});
+
 export const Route = createFileRoute("/members/")({
+  validateSearch: membersSearchSchema,
   component: RouteComponent,
 });
 
@@ -170,28 +182,35 @@ const GENDER_OPTIONS: { value: GenderValue; label: string }[] = [
 ];
 
 function RouteComponent() {
-  const [selectedOptions, setSelectedOptions] = useState<Option[]>([]);
-  const [tagFilterMode, setTagFilterMode] = useState<TagFilterMode>("any");
-  const [sort, setSort] = useState<SortValue>("lastName-asc");
-  const [gender, setGender] = useState<GenderValue>("all");
+  const { sort, gender, tagIds, tagFilterMode } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const { data: tags } = useGetTags();
+
   const selectedSort = SORT_OPTIONS.find((o) => o.value === sort)!;
   const selectedGender = GENDER_OPTIONS.find((o) => o.value === gender)!;
+
+  const tagsById = useMemo(() => new Map((tags ?? []).map((t) => [t.id, t])), [tags]);
+  const tagOptions: Option[] = useMemo(() => (tags ?? []).map((t) => ({ value: t.id, label: t.name })), [tags]);
+  const selectedOptions: Option[] = useMemo(
+    () => tagIds.flatMap((id) => { const t = tagsById.get(id); return t ? [{ value: t.id, label: t.name }] : []; }),
+    [tagIds, tagsById],
+  );
+
+  const setSort = (v: SortValue) => navigate({ search: (prev) => ({ ...prev, sort: v }) });
+  const setGender = (v: GenderValue) => navigate({ search: (prev) => ({ ...prev, gender: v }) });
+  const setTagIds = (ids: string[]) => navigate({ search: (prev) => ({ ...prev, tagIds: ids }) });
+  const setTagFilterMode = (mode: TagFilterMode) => navigate({ search: (prev) => ({ ...prev, tagFilterMode: mode }) });
+
   const { data, isError, error } = useMembers({
     page: 1,
     pageSize: 25,
-    tagIds: selectedOptions.map((o) => o.value),
-    tagFilterMode: selectedOptions.length > 1 ? tagFilterMode : undefined,
+    tagIds,
+    tagFilterMode: tagIds.length > 1 ? tagFilterMode : undefined,
     legalGender: gender === "all" ? undefined : gender,
     sortBy: selectedSort.sortBy,
     sortOrder: selectedSort.sortOrder,
   });
 
-  const options: Option[] = (tags ?? []).map((t) => ({ value: t.id, label: t.name }));
-  const tagsById = useMemo(
-    () => new Map((tags ?? []).map((t) => [t.id, t])),
-    [tags],
-  );
   const tagSummary =
     selectedOptions.length === 0
       ? "All tags"
@@ -218,7 +237,7 @@ function RouteComponent() {
       >
         <div role="group" aria-label="Filter and sort members" className="flex flex-wrap items-center gap-3">
           {tags && tags.length > 0 && (
-            <Combobox items={options} value={selectedOptions} onValueChange={setSelectedOptions} multiple>
+            <Combobox items={tagOptions} value={selectedOptions} onValueChange={(opts) => setTagIds(opts.map((o) => o.value))} multiple>
               <ComboboxChips
                 className="flex min-h-9 w-fit max-w-xl items-center gap-1.5 overflow-hidden rounded-md border border-input bg-transparent py-1.5 pr-1 pl-0 text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30"
                 aria-label={`Tags: ${tagSummary}`}
@@ -286,7 +305,7 @@ function RouteComponent() {
                   <div className="border-t border-border p-1">
                     <button
                       type="button"
-                      onClick={() => setSelectedOptions([])}
+                      onClick={() => setTagIds([])}
                       className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                     >
                       <XIcon className="size-4" />

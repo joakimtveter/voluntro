@@ -6,7 +6,7 @@ export const memberFormValidationSchema = z.object({
   firstName: z.string().min(1),
   middleNames: z.string().transform((v) => (v.trim() === "" ? null : v)),
   lastName: z.string().min(1),
-  email: z.email().max(254),
+  email: z.email().max(254).or(z.literal("").transform(() => null)),
   dateOfBirth: z.iso
     .date()
     .or(z.literal("").transform(() => undefined))
@@ -20,6 +20,7 @@ export const memberFormValidationSchema = z.object({
       { message: "Date of birth cannot be in the future" },
     ),
   legalGender: z.enum(LegalGender),
+  memberTypeId: z.string().transform((v) => (v === "" ? undefined : v)),
 });
 
 export type MemberFormValues = z.input<typeof memberFormValidationSchema>;

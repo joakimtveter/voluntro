@@ -30,7 +30,7 @@ public class MemberSummary
     /// <summary>
     /// Email address of the member.
     /// </summary>
-    public string Email { get; init; } = string.Empty;
+    public string? Email { get; init; }
 
     /// <summary>
     /// Date of birth of the member, if known.
@@ -61,5 +61,9 @@ public class MemberSummary
     /// Indicates whether the member has been soft-deleted.
     /// </summary>
     public bool IsDeleted { get; init; }
-    
+
+    /// <summary>
+    /// The member type assigned to this member.
+    /// </summary>
+    public Guid MemberTypeId { get; init; }
 }

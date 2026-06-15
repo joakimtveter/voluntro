@@ -9,7 +9,11 @@ import { useAppForm } from "#/shared/hooks/use-form.tsx";
 
 type MemberFormProps = {
   memberId?: string;
-  defaultValues?: Omit<MemberFormValues, "middleNames"> & { middleNames?: string | null };
+  defaultValues?: Omit<MemberFormValues, "middleNames" | "email"> & {
+    middleNames?: string | null;
+    email?: string | null;
+    memberTypeId?: string;
+  };
 };
 
 export default function MemberForm(props: MemberFormProps) {
@@ -25,6 +29,7 @@ export default function MemberForm(props: MemberFormProps) {
       email: defaultValues?.email ?? "",
       dateOfBirth: defaultValues?.dateOfBirth ?? "",
       legalGender: (defaultValues?.legalGender?.toLowerCase() as LegalGenderEnum | undefined) ?? LegalGender.unknown,
+      memberTypeId: defaultValues?.memberTypeId ?? "",
     },
     validators: {
       onSubmit: memberFormValidationSchema,
@@ -84,6 +89,7 @@ export default function MemberForm(props: MemberFormProps) {
           children={(field) => <field.BirthdayPicker label="Date of birth" />}
         />
         <form.AppField name="legalGender" children={(field) => <field.LegalGenderPicker />} />
+        <form.AppField name="memberTypeId" children={(field) => <field.MemberTypePicker />} />
         <form.FormActions>
           <form.ResetButton />
           <form.SubmitButton>{memberId ? "Update member" : "Create member"}</form.SubmitButton>
