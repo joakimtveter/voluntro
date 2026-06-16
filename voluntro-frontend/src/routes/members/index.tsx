@@ -1,19 +1,22 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { createFileRoute } from "@tanstack/react-router";
+import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { EyeIcon, PencilIcon, XIcon } from "lucide-react";
 import { useMemo } from "react";
 import * as z from "zod";
 
-import type { LegalGenderEnum, MemberBrief } from "#/domains/members/member.types.ts";
+import {
+  buildMemberColumns,
+  GENDER_OPTIONS,
+  memberColumnHelper,
+  SORT_OPTIONS,
+  type GenderValue,
+  type Option,
+  type SortValue,
+  type TagFilterMode,
+} from "#/domains/members/member-table.tsx";
 import { useMembers } from "#/domains/members/use-members.ts";
 import { useGetTags } from "#/domains/tags/use-tags.ts";
 import PageWrapper from "#/shared/components/page-wrapper.tsx";
-import { Badge } from "#/shared/components/ui/badge.tsx";
 import {
   Combobox,
   ComboboxChip,
@@ -42,147 +45,72 @@ import {
   TableHeader,
   TableRow,
 } from "#/shared/components/ui/table.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "#/shared/components/ui/tooltip.tsx";
-import { formatDate } from "#/shared/lib/datetime.ts";
-import { formatName } from "#/shared/lib/formatName.ts";
 import { cn } from "#/shared/lib/utils.ts";
 import ErrorPage from "#/shared/pages/error-page.tsx";
 import LoadingPage from "#/shared/pages/loading-page.tsx";
 
 const membersSearchSchema = z.object({
   sort: z
-    .enum(["lastName-asc", "lastName-desc", "firstName-asc", "firstName-desc", "dateOfBirth-asc", "dateOfBirth-desc"])
-    .catch("lastName-asc")
-    .default("lastName-asc"),
-  gender: z.enum(["all", "female", "male", "unknown"]).catch("all").default("all"),
-  tagIds: z.array(z.string()).catch([]).default([]),
-  tagFilterMode: z.enum(["any", "all"]).catch("any").default("any"),
+    .enum([
+      "lastName-asc",
+      "lastName-desc",
+      "firstName-asc",
+      "firstName-desc",
+      "dateOfBirth-asc",
+      "dateOfBirth-desc",
+      "createdAt-asc",
+      "createdAt-desc",
+      "updatedAt-asc",
+      "updatedAt-desc",
+    ])
+    .optional()
+    .catch(undefined),
+  gender: z.enum(["all", "female", "male", "unknown"]).optional().catch(undefined),
+  tagIds: z.array(z.string()).optional().catch(undefined),
+  tagFilterMode: z.enum(["any", "all"]).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/members/")({
   validateSearch: membersSearchSchema,
-  component: RouteComponent,
+  component: MembersListPage,
 });
-
-const columnHelper = createColumnHelper<MemberBrief>();
 
 function buildColumns(nameFormat: "fl" | "lf") {
   return [
-  columnHelper.accessor(
-    (row) => [row.firstName, row.middleNames, row.lastName].filter(Boolean).join(" "),
-    {
-      id: "name",
-      header: "Name",
+    ...buildMemberColumns(nameFormat),
+    memberColumnHelper.display({
+      id: "actions",
+      header: () => <span className="sr-only">Actions</span>,
       cell: ({ row }) => (
-        <Link
-          to="/members/$memberId"
-          params={{ memberId: row.original.id }}
-          className="font-medium hover:underline"
-        >
-          {formatName(
-            row.original.firstName,
-            row.original.middleNames,
-            row.original.lastName,
-            nameFormat,
-          )}
-        </Link>
-      ),
-    },
-  ),
-  columnHelper.accessor("legalGender", {
-    header: () => <span className="sr-only">Gender</span>,
-    cell: ({ getValue }) => {
-      const value = getValue();
-      const { symbol, label, explanation } =
-        value === "female"
-          ? { symbol: "♀", label: "Female", explanation: "Female" }
-          : value === "male"
-            ? { symbol: "♂", label: "Male", explanation: "Male" }
-            : {
-                symbol: "?",
-                label: "Unknown gender",
-                explanation: "Legal gender has not been specified for this member.",
-              };
-      return (
-        <Tooltip>
-          <TooltipTrigger
-            className="focus-visible:ring-ring inline-flex h-6 w-6 cursor-help items-center justify-center rounded-sm text-base outline-none focus-visible:ring-2"
-            aria-label={label}
+        <div className="flex justify-end">
+          <IconLinkButton
+            to="/members/$memberId"
+            params={{ memberId: row.original.id }}
+            aria-label={`View ${row.original.firstName} ${row.original.lastName}`}
           >
-            <span aria-hidden>{symbol}</span>
-          </TooltipTrigger>
-          <TooltipContent>{explanation}</TooltipContent>
-        </Tooltip>
-      );
-    },
-  }),
-  columnHelper.accessor("dateOfBirth", {
-    header: "Date of birth",
-    cell: ({ getValue }) => formatDate(getValue()),
-  }),
-  columnHelper.accessor("tags", {
-    header: "Tags",
-    cell: ({ getValue }) => (
-      <div className="flex flex-wrap gap-1">
-        {getValue().map((tag) => (
-          <Badge key={tag.id} style={{ backgroundColor: tag.color }}>{tag.name}</Badge>
-        ))}
-      </div>
-    ),
-  }),
-  columnHelper.display({
-    id: "actions",
-    header: () => <span className="sr-only">Actions</span>,
-    cell: ({ row }) => (
-      <div className="flex justify-end">
-        <IconLinkButton
-          to="/members/$memberId"
-          params={{ memberId: row.original.id }}
-          aria-label={`Edit ${row.original.firstName} ${row.original.lastName}`}
-        >
-          <EyeIcon />
-        </IconLinkButton>
-        <IconLinkButton
-          to="/members/$memberId/edit"
-          params={{ memberId: row.original.id }}
-          aria-label={`Edit ${row.original.firstName} ${row.original.lastName}`}
-        >
-          <PencilIcon />
-        </IconLinkButton>
-      </div>
-    ),
-  }),
-];
+            <EyeIcon />
+          </IconLinkButton>
+          <IconLinkButton
+            to="/members/$memberId/edit"
+            params={{ memberId: row.original.id }}
+            search={{ returnTo: "/members/" }}
+            aria-label={`Edit ${row.original.firstName} ${row.original.lastName}`}
+          >
+            <PencilIcon />
+          </IconLinkButton>
+        </div>
+      ),
+    }),
+  ];
 }
 
-type Option = { value: string; label: string };
-type SortValue = "lastName-asc" | "lastName-desc" | "firstName-asc" | "firstName-desc" | "dateOfBirth-asc" | "dateOfBirth-desc";
-
-const SORT_OPTIONS: { value: SortValue; label: string; sortBy: "lastName" | "firstName" | "dateOfBirth"; sortOrder: "asc" | "desc" }[] = [
-  { value: "lastName-asc",        label: "Last name (A–Z)",              sortBy: "lastName",     sortOrder: "asc"  },
-  { value: "lastName-desc",       label: "Last name (Z–A)",              sortBy: "lastName",     sortOrder: "desc" },
-  { value: "firstName-asc",       label: "First name (A–Z)",             sortBy: "firstName",    sortOrder: "asc"  },
-  { value: "firstName-desc",      label: "First name (Z–A)",             sortBy: "firstName",    sortOrder: "desc" },
-  { value: "dateOfBirth-asc",     label: "Date of birth (oldest first)", sortBy: "dateOfBirth",  sortOrder: "asc"  },
-  { value: "dateOfBirth-desc",    label: "Date of birth (youngest first)", sortBy: "dateOfBirth", sortOrder: "desc" },
-];
-
-type GenderValue = "all" | LegalGenderEnum;
-type TagFilterMode = "any" | "all";
-
-const GENDER_OPTIONS: { value: GenderValue; label: string }[] = [
-  { value: "all",     label: "All" },
-  { value: "female",  label: "Female" },
-  { value: "male",    label: "Male" },
-  { value: "unknown", label: "Unknown" },
-];
-
-function RouteComponent() {
-  const { sort, gender, tagIds, tagFilterMode } = Route.useSearch();
+function MembersListPage() {
+  const {
+    sort = "lastName-asc",
+    gender = "all",
+    tagIds = [],
+    tagFilterMode = "any",
+  } = Route.useSearch();
   const navigate = Route.useNavigate();
   const { data: tags } = useGetTags();
 
@@ -190,16 +118,27 @@ function RouteComponent() {
   const selectedGender = GENDER_OPTIONS.find((o) => o.value === gender)!;
 
   const tagsById = useMemo(() => new Map((tags ?? []).map((t) => [t.id, t])), [tags]);
-  const tagOptions: Option[] = useMemo(() => (tags ?? []).map((t) => ({ value: t.id, label: t.name })), [tags]);
+  const tagOptions: Option[] = useMemo(
+    () => (tags ?? []).map((t) => ({ value: t.id, label: t.name })),
+    [tags],
+  );
   const selectedOptions: Option[] = useMemo(
-    () => tagIds.flatMap((id) => { const t = tagsById.get(id); return t ? [{ value: t.id, label: t.name }] : []; }),
+    () =>
+      tagIds.flatMap((id) => {
+        const t = tagsById.get(id);
+        return t ? [{ value: t.id, label: t.name }] : [];
+      }),
     [tagIds, tagsById],
   );
 
-  const setSort = (v: SortValue) => navigate({ search: (prev) => ({ ...prev, sort: v }) });
-  const setGender = (v: GenderValue) => navigate({ search: (prev) => ({ ...prev, gender: v }) });
-  const setTagIds = (ids: string[]) => navigate({ search: (prev) => ({ ...prev, tagIds: ids }) });
-  const setTagFilterMode = (mode: TagFilterMode) => navigate({ search: (prev) => ({ ...prev, tagFilterMode: mode }) });
+  const setSort = (v: SortValue) =>
+    navigate({ search: (prev) => ({ ...prev, sort: v === "lastName-asc" ? undefined : v }) });
+  const setGender = (v: GenderValue) =>
+    navigate({ search: (prev) => ({ ...prev, gender: v === "all" ? undefined : v }) });
+  const setTagIds = (ids: string[]) =>
+    navigate({ search: (prev) => ({ ...prev, tagIds: ids.length === 0 ? undefined : ids }) });
+  const setTagFilterMode = (mode: TagFilterMode) =>
+    navigate({ search: (prev) => ({ ...prev, tagFilterMode: mode === "any" ? undefined : mode }) });
 
   const { data, isError, error } = useMembers({
     page: 1,
@@ -235,14 +174,28 @@ function RouteComponent() {
         title="Members"
         actions={<LinkButton to="/members/add">Add a new member</LinkButton>}
       >
-        <div role="group" aria-label="Filter and sort members" className="flex flex-wrap items-center gap-3">
+        <div
+          role="group"
+          aria-label="Filter and sort members"
+          className="flex flex-wrap items-center gap-3"
+        >
           {tags && tags.length > 0 && (
-            <Combobox items={tagOptions} value={selectedOptions} onValueChange={(opts) => setTagIds(opts.map((o) => o.value))} multiple>
+            <Combobox
+              items={tagOptions}
+              value={selectedOptions}
+              onValueChange={(opts) => setTagIds(opts.map((o) => o.value))}
+              multiple
+            >
               <ComboboxChips
-                className="flex min-h-9 w-fit max-w-xl items-center gap-1.5 overflow-hidden rounded-md border border-input bg-transparent py-1.5 pr-1 pl-0 text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30"
+                className="border-input focus-within:border-ring focus-within:ring-ring/50 dark:bg-input/30 flex min-h-9 w-fit max-w-xl items-center gap-1.5 overflow-hidden rounded-md border bg-transparent py-1.5 pr-1 pl-0 text-sm shadow-xs transition-[color,box-shadow] focus-within:ring-3"
                 aria-label={`Tags: ${tagSummary}`}
               >
-                <span aria-hidden className="bg-muted text-muted-foreground -my-1.5 self-stretch flex items-center pl-2.5 pr-2 text-sm">Tags</span>
+                <span
+                  aria-hidden
+                  className="bg-muted text-muted-foreground -my-1.5 flex items-center self-stretch pr-2 pl-2.5 text-sm"
+                >
+                  Tags
+                </span>
                 {selectedOptions.length === 0 ? (
                   <span className="text-muted-foreground">All tags</span>
                 ) : (
@@ -259,10 +212,14 @@ function RouteComponent() {
                     );
                   })
                 )}
-                <ComboboxTrigger className="ml-auto inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground" />
+                <ComboboxTrigger className="text-muted-foreground hover:text-foreground ml-auto inline-flex size-6 items-center justify-center rounded-sm" />
               </ComboboxChips>
               <ComboboxContent className="min-w-56">
-                <div className="m-1 mb-0 flex rounded-md bg-muted p-0.5 text-xs" role="radiogroup" aria-label="Tag match mode">
+                <div
+                  className="bg-muted m-1 mb-0 flex rounded-md p-0.5 text-xs"
+                  role="radiogroup"
+                  aria-label="Tag match mode"
+                >
                   <button
                     type="button"
                     role="radio"
@@ -302,11 +259,11 @@ function RouteComponent() {
                   )}
                 </ComboboxList>
                 {selectedOptions.length > 0 && (
-                  <div className="border-t border-border p-1">
+                  <div className="border-border border-t p-1">
                     <button
                       type="button"
                       onClick={() => setTagIds([])}
-                      className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm"
                     >
                       <XIcon className="size-4" />
                       Clear selection
@@ -317,8 +274,16 @@ function RouteComponent() {
             </Combobox>
           )}
           <Select value={gender} onValueChange={(v) => setGender(v as GenderValue)}>
-            <SelectTrigger className="overflow-hidden" aria-label={`Gender: ${selectedGender.label}`}>
-              <span aria-hidden className="bg-muted text-muted-foreground -ml-2.5 -my-2 self-stretch flex items-center pl-2.5 pr-2">Gender</span>
+            <SelectTrigger
+              className="overflow-hidden"
+              aria-label={`Gender: ${selectedGender.label}`}
+            >
+              <span
+                aria-hidden
+                className="bg-muted text-muted-foreground -my-2 -ml-2.5 flex items-center self-stretch pr-2 pl-2.5"
+              >
+                Gender
+              </span>
               <SelectValue>{selectedGender.label}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -330,8 +295,16 @@ function RouteComponent() {
             </SelectContent>
           </Select>
           <Select value={sort} onValueChange={(v) => setSort(v as SortValue)}>
-            <SelectTrigger className="overflow-hidden" aria-label={`Sort by: ${selectedSort.label}`}>
-              <span aria-hidden className="bg-muted text-muted-foreground -ml-2.5 -my-2 self-stretch flex items-center pl-2.5 pr-2">Sort by</span>
+            <SelectTrigger
+              className="overflow-hidden"
+              aria-label={`Sort by: ${selectedSort.label}`}
+            >
+              <span
+                aria-hidden
+                className="bg-muted text-muted-foreground -my-2 -ml-2.5 flex items-center self-stretch pr-2 pl-2.5"
+              >
+                Sort by
+              </span>
               <SelectValue>{selectedSort.label}</SelectValue>
             </SelectTrigger>
             <SelectContent>

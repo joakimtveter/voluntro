@@ -12,7 +12,7 @@ type AdminMembersQuery = Pagination & {
   tagIds?: string[];
   tagFilterMode?: "any" | "all";
   legalGender?: LegalGenderEnum;
-  sortBy?: "lastName" | "firstName" | "dateOfBirth";
+  sortBy?: "lastName" | "firstName" | "dateOfBirth" | "createdAt" | "updatedAt";
   sortOrder?: "asc" | "desc";
 };
 

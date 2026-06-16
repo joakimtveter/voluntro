@@ -29,7 +29,12 @@ function RouteComponent() {
             : `Created: ${formatDateTime(member.createdAt, "precise")}, Updated: ${formatDateTime(member.updatedAt, "precise")}`
         }
         actions={
-          <LinkButton variant="outline" to="/members/$memberId/edit" params={{ memberId }}>
+          <LinkButton
+            variant="outline"
+            to="/members/$memberId/edit"
+            params={{ memberId }}
+            search={{ returnTo: `/members/${memberId}` }}
+          >
             <PencilIcon />
             Edit member
           </LinkButton>

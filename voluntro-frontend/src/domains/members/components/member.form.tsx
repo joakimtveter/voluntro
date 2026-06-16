@@ -14,10 +14,11 @@ type MemberFormProps = {
     email?: string | null;
     memberTypeId?: string;
   };
+  onSuccess?: () => void;
 };
 
 export default function MemberForm(props: MemberFormProps) {
-  const { defaultValues, memberId = "" } = props;
+  const { defaultValues, memberId = "", onSuccess } = props;
   const { mutate: create } = useCreateMember();
   const { mutate: update } = useUpdateMember(memberId);
 
@@ -40,12 +41,14 @@ export default function MemberForm(props: MemberFormProps) {
       if (memberId) {
         update(payload, {
           onSuccess: () => {
+            onSuccess?.();
             form.reset();
           },
         });
       } else {
         create(payload, {
           onSuccess: () => {
+            onSuccess?.();
             form.reset();
           },
         });

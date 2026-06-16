@@ -1,25 +1,30 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { createFileRoute } from "@tanstack/react-router";
+import { flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { EyeIcon, PencilIcon, ShieldAlertIcon, Trash2Icon, Undo2Icon, XIcon } from "lucide-react";
 import { useMemo, useState } from "react";
+import * as z from "zod";
 
-import type { LegalGenderEnum, MemberBrief } from "#/domains/members/member.types.ts";
-import { useDeleteMember } from "#/domains/members/use-members.ts";
+
+import {
+  buildMemberColumns,
+  GENDER_OPTIONS,
+  memberColumnHelper,
+  SORT_OPTIONS,
+  type GenderValue,
+  type Option,
+  type SortValue,
+  type TagFilterMode,
+} from "#/domains/members/member-table.tsx";
 import {
   useAdminMembers,
   useGdprDeleteMember,
   useRestoreMember,
 } from "#/domains/members/use-members-admin.ts";
+import { useDeleteMember } from "#/domains/members/use-members.ts";
 import { useGetTags } from "#/domains/tags/use-tags.ts";
 import { ConfirmDialog } from "#/shared/components/confirm-dialog.tsx";
 import IconButton from "#/shared/components/icon-button.tsx";
 import PageWrapper from "#/shared/components/page-wrapper.tsx";
-import { Badge } from "#/shared/components/ui/badge.tsx";
 import {
   Combobox,
   ComboboxChip,
@@ -48,92 +53,41 @@ import {
   TableHeader,
   TableRow,
 } from "#/shared/components/ui/table.tsx";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "#/shared/components/ui/tooltip.tsx";
-import { formatDate } from "#/shared/lib/datetime.ts";
 import { formatName } from "#/shared/lib/formatName.ts";
 import ErrorPage from "#/shared/pages/error-page.tsx";
 import LoadingPage from "#/shared/pages/loading-page.tsx";
 
+const adminMembersSearchSchema = z.object({
+  sort: z
+    .enum([
+      "lastName-asc",
+      "lastName-desc",
+      "firstName-asc",
+      "firstName-desc",
+      "dateOfBirth-asc",
+      "dateOfBirth-desc",
+      "createdAt-asc",
+      "createdAt-desc",
+      "updatedAt-asc",
+      "updatedAt-desc",
+    ])
+    .optional()
+    .catch(undefined),
+  gender: z.enum(["all", "female", "male", "unknown"]).optional().catch(undefined),
+  tagIds: z.array(z.string()).optional().catch(undefined),
+  tagFilterMode: z.enum(["any", "all"]).optional().catch(undefined),
+  includeDeleted: z.boolean().optional().catch(undefined),
+});
+
 export const Route = createFileRoute("/admin/members")({
+  validateSearch: adminMembersSearchSchema,
   component: RouteComponent,
 });
 
-const columnHelper = createColumnHelper<MemberBrief>();
-
 function buildColumns(nameFormat: "fl" | "lf") {
   return [
-    columnHelper.accessor(
-      (row) => [row.firstName, row.middleNames, row.lastName].filter(Boolean).join(" "),
-      {
-        id: "name",
-        header: "Name",
-        cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <Link
-              to="/members/$memberId"
-              params={{ memberId: row.original.id }}
-              className="font-medium hover:underline"
-            >
-              {formatName(
-                row.original.firstName,
-                row.original.middleNames,
-                row.original.lastName,
-                nameFormat,
-              )}
-            </Link>
-            {row.original.isDeleted && <Badge variant="destructive">Deleted</Badge>}
-          </div>
-        ),
-      },
-    ),
-    columnHelper.accessor("legalGender", {
-      header: () => <span className="sr-only">Gender</span>,
-      cell: ({ getValue }) => {
-        const value = getValue();
-        const { symbol, label, explanation } =
-          value === "female"
-            ? { symbol: "♀", label: "Female", explanation: "Female" }
-            : value === "male"
-              ? { symbol: "♂", label: "Male", explanation: "Male" }
-              : {
-                  symbol: "?",
-                  label: "Unknown gender",
-                  explanation: "Legal gender has not been specified for this member.",
-                };
-        return (
-          <Tooltip>
-            <TooltipTrigger
-              className="focus-visible:ring-ring inline-flex h-6 w-6 cursor-help items-center justify-center rounded-sm text-base outline-none focus-visible:ring-2"
-              aria-label={label}
-            >
-              <span aria-hidden>{symbol}</span>
-            </TooltipTrigger>
-            <TooltipContent>{explanation}</TooltipContent>
-          </Tooltip>
-        );
-      },
-    }),
-    columnHelper.accessor("dateOfBirth", {
-      header: "Date of birth",
-      cell: ({ getValue }) => formatDate(getValue()),
-    }),
-    columnHelper.accessor("tags", {
-      header: "Tags",
-      cell: ({ getValue }) => (
-        <div className="flex flex-wrap gap-1">
-          {getValue().map((tag) => (
-            <Badge key={tag.id} style={{ backgroundColor: tag.color }}>
-              {tag.name}
-            </Badge>
-          ))}
-        </div>
-      ),
-    }),
-    columnHelper.display({
+    ...buildMemberColumns(nameFormat, { showDeletedBadge: true }),
+    memberColumnHelper.display({
       id: "actions",
       header: () => <span className="sr-only">Actions</span>,
       cell: ({ row }) => (
@@ -141,12 +95,7 @@ function buildColumns(nameFormat: "fl" | "lf") {
           {row.original.isDeleted ? (
             <RestoreMemberButton
               memberId={row.original.id}
-              memberName={formatName(
-                row.original.firstName,
-                row.original.middleNames,
-                row.original.lastName,
-                "fl",
-              )}
+              memberName={formatName(row.original.firstName, row.original.middleNames, row.original.lastName, "fl")}
             />
           ) : (
             <>
@@ -160,29 +109,20 @@ function buildColumns(nameFormat: "fl" | "lf") {
               <IconLinkButton
                 to="/members/$memberId/edit"
                 params={{ memberId: row.original.id }}
+                search={{ returnTo: "/admin/members" }}
                 aria-label={`Edit ${row.original.firstName} ${row.original.lastName}`}
               >
                 <PencilIcon />
               </IconLinkButton>
               <DeleteMemberButton
                 memberId={row.original.id}
-                memberName={formatName(
-                  row.original.firstName,
-                  row.original.middleNames,
-                  row.original.lastName,
-                  "fl",
-                )}
+                memberName={formatName(row.original.firstName, row.original.middleNames, row.original.lastName, "fl")}
               />
             </>
           )}
           <GdprDeleteButton
             memberId={row.original.id}
-            memberName={formatName(
-              row.original.firstName,
-              row.original.middleNames,
-              row.original.lastName,
-              "fl",
-            )}
+            memberName={formatName(row.original.firstName, row.original.middleNames, row.original.lastName, "fl")}
           />
         </div>
       ),
@@ -190,64 +130,48 @@ function buildColumns(nameFormat: "fl" | "lf") {
   ];
 }
 
-type SortValue =
-  | "lastName-asc"
-  | "lastName-desc"
-  | "firstName-asc"
-  | "firstName-desc"
-  | "dateOfBirth-asc"
-  | "dateOfBirth-desc";
-
-type TagFilterMode = "any" | "all";
-type GenderValue = "all" | LegalGenderEnum;
-type Option = { value: string; label: string };
-
-const GENDER_OPTIONS: { value: GenderValue; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "female", label: "Female" },
-  { value: "male", label: "Male" },
-  { value: "unknown", label: "Unknown" },
-];
-
-const SORT_OPTIONS: {
-  value: SortValue;
-  label: string;
-  sortBy: "lastName" | "firstName" | "dateOfBirth";
-  sortOrder: "asc" | "desc";
-}[] = [
-  { value: "lastName-asc", label: "Last name (A–Z)", sortBy: "lastName", sortOrder: "asc" },
-  { value: "lastName-desc", label: "Last name (Z–A)", sortBy: "lastName", sortOrder: "desc" },
-  { value: "firstName-asc", label: "First name (A–Z)", sortBy: "firstName", sortOrder: "asc" },
-  { value: "firstName-desc", label: "First name (Z–A)", sortBy: "firstName", sortOrder: "desc" },
-  {
-    value: "dateOfBirth-asc",
-    label: "Date of birth (oldest first)",
-    sortBy: "dateOfBirth",
-    sortOrder: "asc",
-  },
-  {
-    value: "dateOfBirth-desc",
-    label: "Date of birth (youngest first)",
-    sortBy: "dateOfBirth",
-    sortOrder: "desc",
-  },
-];
-
 function RouteComponent() {
+  const {
+    sort = "lastName-asc",
+    gender = "all",
+    tagIds = [],
+    tagFilterMode = "any",
+    includeDeleted = false,
+  } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
-  const [sort, setSort] = useState<SortValue>("lastName-asc");
-  const [includeDeleted, setIncludeDeleted] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<Option[]>([]);
-  const [tagFilterMode, setTagFilterMode] = useState<TagFilterMode>("any");
-  const [gender, setGender] = useState<GenderValue>("all");
+
+  const setSort = (v: SortValue) =>
+    navigate({ search: (prev) => ({ ...prev, sort: v === "lastName-asc" ? undefined : v }) });
+  const setGender = (v: GenderValue) =>
+    navigate({ search: (prev) => ({ ...prev, gender: v === "all" ? undefined : v }) });
+  const setTagIds = (ids: string[]) =>
+    navigate({ search: (prev) => ({ ...prev, tagIds: ids.length === 0 ? undefined : ids }) });
+  const setTagFilterMode = (mode: TagFilterMode) =>
+    navigate({ search: (prev) => ({ ...prev, tagFilterMode: mode === "any" ? undefined : mode }) });
+  const setIncludeDeleted = (v: boolean) => {
+    navigate({ search: (prev) => ({ ...prev, includeDeleted: v || undefined }) });
+    setPage(1);
+  };
 
   const selectedSort = SORT_OPTIONS.find((o) => o.value === sort)!;
   const selectedGender = GENDER_OPTIONS.find((o) => o.value === gender)!;
   const { data: tags } = useGetTags();
 
-  const tagOptions: Option[] = (tags ?? []).map((t) => ({ value: t.id, label: t.name }));
   const tagsById = useMemo(() => new Map((tags ?? []).map((t) => [t.id, t])), [tags]);
+  const tagOptions: Option[] = useMemo(
+    () => (tags ?? []).map((t) => ({ value: t.id, label: t.name })),
+    [tags],
+  );
+  const selectedTags: Option[] = useMemo(
+    () =>
+      tagIds.flatMap((id) => {
+        const t = tagsById.get(id);
+        return t ? [{ value: t.id, label: t.name }] : [];
+      }),
+    [tagIds, tagsById],
+  );
   const tagSummary =
     selectedTags.length === 0
       ? "All tags"
@@ -259,8 +183,8 @@ function RouteComponent() {
     page,
     pageSize,
     includeDeleted,
-    tagIds: selectedTags.map((o) => o.value),
-    tagFilterMode: selectedTags.length > 1 ? tagFilterMode : undefined,
+    tagIds,
+    tagFilterMode: tagIds.length > 1 ? tagFilterMode : undefined,
     legalGender: gender === "all" ? undefined : gender,
     sortBy: selectedSort.sortBy,
     sortOrder: selectedSort.sortOrder,
@@ -279,35 +203,53 @@ function RouteComponent() {
 
   if (data) {
     return (
-      <PageWrapper title="Members" subTitle="Admin view — includes deleted members">
+      <PageWrapper title="Members admin">
         <div
           role="group"
           aria-label="Filter and sort members"
           className="mb-4 flex flex-wrap items-center gap-3"
         >
           {tags && tags.length > 0 && (
-            <Combobox items={tagOptions} value={selectedTags} onValueChange={setSelectedTags} multiple>
+            <Combobox
+              items={tagOptions}
+              value={selectedTags}
+              onValueChange={(opts) => setTagIds(opts.map((o) => o.value))}
+              multiple
+            >
               <ComboboxChips
-                className="flex min-h-9 w-fit max-w-xl items-center gap-1.5 overflow-hidden rounded-md border border-input bg-transparent py-1.5 pr-1 pl-0 text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30"
+                className="border-input focus-within:border-ring focus-within:ring-ring/50 dark:bg-input/30 flex min-h-9 w-fit max-w-xl items-center gap-1.5 overflow-hidden rounded-md border bg-transparent py-1.5 pr-1 pl-0 text-sm shadow-xs transition-[color,box-shadow] focus-within:ring-3"
                 aria-label={`Tags: ${tagSummary}`}
               >
-                <span aria-hidden className="bg-muted text-muted-foreground -my-1.5 flex items-center self-stretch pl-2.5 pr-2 text-sm">Tags</span>
+                <span
+                  aria-hidden
+                  className="bg-muted text-muted-foreground -my-1.5 flex items-center self-stretch pr-2 pl-2.5 text-sm"
+                >
+                  Tags
+                </span>
                 {selectedTags.length === 0 ? (
                   <span className="text-muted-foreground">All tags</span>
                 ) : (
                   selectedTags.map((opt) => {
                     const tag = tagsById.get(opt.value);
                     return (
-                      <ComboboxChip key={opt.value} className="text-white" style={{ backgroundColor: tag?.color }}>
+                      <ComboboxChip
+                        key={opt.value}
+                        className="text-white"
+                        style={{ backgroundColor: tag?.color }}
+                      >
                         {opt.label}
                       </ComboboxChip>
                     );
                   })
                 )}
-                <ComboboxTrigger className="ml-auto inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground" />
+                <ComboboxTrigger className="text-muted-foreground hover:text-foreground ml-auto inline-flex size-6 items-center justify-center rounded-sm" />
               </ComboboxChips>
               <ComboboxContent className="min-w-56">
-                <div className="m-1 mb-0 flex rounded-md bg-muted p-0.5 text-xs" role="radiogroup" aria-label="Tag match mode">
+                <div
+                  className="bg-muted m-1 mb-0 flex rounded-md p-0.5 text-xs"
+                  role="radiogroup"
+                  aria-label="Tag match mode"
+                >
                   <button
                     type="button"
                     role="radio"
@@ -337,11 +279,11 @@ function RouteComponent() {
                   )}
                 </ComboboxList>
                 {selectedTags.length > 0 && (
-                  <div className="border-t border-border p-1">
+                  <div className="border-border border-t p-1">
                     <button
                       type="button"
-                      onClick={() => setSelectedTags([])}
-                      className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      onClick={() => setTagIds([])}
+                      className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm"
                     >
                       <XIcon className="size-4" />
                       Clear selection
@@ -353,22 +295,35 @@ function RouteComponent() {
           )}
 
           <Select value={gender} onValueChange={(v) => setGender(v as GenderValue)}>
-            <SelectTrigger className="overflow-hidden" aria-label={`Gender: ${selectedGender.label}`}>
-              <span aria-hidden className="bg-muted text-muted-foreground -my-2 -ml-2.5 flex items-center self-stretch pl-2.5 pr-2">Gender</span>
+            <SelectTrigger
+              className="overflow-hidden"
+              aria-label={`Gender: ${selectedGender.label}`}
+            >
+              <span
+                aria-hidden
+                className="bg-muted text-muted-foreground -my-2 -ml-2.5 flex items-center self-stretch pr-2 pl-2.5"
+              >
+                Gender
+              </span>
               <SelectValue>{selectedGender.label}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {GENDER_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
           <Select value={sort} onValueChange={(v) => setSort(v as SortValue)}>
-            <SelectTrigger className="overflow-hidden" aria-label={`Sort by: ${selectedSort.label}`}>
+            <SelectTrigger
+              className="overflow-hidden"
+              aria-label={`Sort by: ${selectedSort.label}`}
+            >
               <span
                 aria-hidden
-                className="bg-muted text-muted-foreground -my-2 -ml-2.5 flex items-center self-stretch pl-2.5 pr-2"
+                className="bg-muted text-muted-foreground -my-2 -ml-2.5 flex items-center self-stretch pr-2 pl-2.5"
               >
                 Sort by
               </span>
@@ -387,10 +342,7 @@ function RouteComponent() {
             <input
               type="checkbox"
               checked={includeDeleted}
-              onChange={(e) => {
-                setIncludeDeleted(e.target.checked);
-                setPage(1);
-              }}
+              onChange={(e) => setIncludeDeleted(e.target.checked)}
               className="accent-primary size-4 rounded"
             />
             Include deleted
@@ -457,19 +409,11 @@ function RouteComponent() {
   return <LoadingPage title="Members" />;
 }
 
-function RestoreMemberButton({
-  memberId,
-  memberName,
-}: {
-  memberId: string;
-  memberName: string;
-}) {
+function RestoreMemberButton({ memberId, memberName }: { memberId: string; memberName: string }) {
   const { mutate: restore } = useRestoreMember(memberId);
   return (
     <ConfirmDialog
-      trigger={
-        <IconButton icon={<Undo2Icon />} tooltipContent={`Restore ${memberName}`} />
-      }
+      trigger={<IconButton icon={<Undo2Icon />} tooltipContent={`Restore ${memberName}`} />}
       title="Restore member"
       description={
         <>
@@ -505,13 +449,7 @@ function DeleteMemberButton({ memberId, memberName }: { memberId: string; member
   );
 }
 
-function GdprDeleteButton({
-  memberId,
-  memberName,
-}: {
-  memberId: string;
-  memberName: string;
-}) {
+function GdprDeleteButton({ memberId, memberName }: { memberId: string; memberName: string }) {
   const { mutate: gdprDelete } = useGdprDeleteMember(memberId);
   return (
     <ConfirmDialog
@@ -519,14 +457,14 @@ function GdprDeleteButton({
         <IconButton
           icon={<ShieldAlertIcon />}
           tooltipContent={`Permanently erase ${memberName}`}
-          className="bg-destructive text-white hover:bg-destructive/80"
+          className="bg-destructive hover:bg-destructive/70 text-white hover:!text-red-900"
         />
       }
       title="Permanently erase member data"
       description={
         <>
-          This will permanently erase all personal data for <strong>{memberName}</strong> (GDPR
-          Art. 17). This action cannot be undone.
+          This will permanently erase all personal data for <strong>{memberName}</strong> (GDPR Art.
+          17). This action cannot be undone.
         </>
       }
       confirmLabel="Erase permanently"
