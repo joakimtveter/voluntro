@@ -50,6 +50,10 @@ public class Member
     /// </summary>
     public LegalGender LegalGender {get; set;}
     
+    public ICollection<MemberPhoneNumber> PhoneNumbers { get; set; } = [];
+    
+    public ICollection<MemberAddress> Addresses { get; set; } = [];
+    
     /// <summary>
     /// Gender of the member
     /// </summary>

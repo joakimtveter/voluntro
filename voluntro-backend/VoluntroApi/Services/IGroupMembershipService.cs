@@ -1,6 +1,6 @@
+using VoluntroApi.Dtos.GroupMemberships;
 using VoluntroApi.Dtos.Groups;
 using VoluntroApi.Dtos.Members;
-using VoluntroApi.Dtos.Memberships;
 using VoluntroApi.Dtos.Shared;
 
 namespace VoluntroApi.Services;
@@ -29,10 +29,10 @@ public interface IGroupMembershipService
     /// <summary>
     /// Adds a member to a group and auto-enrolls them in all ancestor groups.
     /// </summary>
-    Task<UpdateMembershipResult> AddMembershipAsync(Guid groupId, Guid memberId, CancellationToken cancellationToken);
+    Task<UpdateGroupMembershipResult> AddMembershipAsync(Guid groupId, Guid memberId, CancellationToken cancellationToken);
     
     /// <summary>
     /// Adds a member to a group and auto-enrolls them in all ancestor groups.
     /// </summary>
-    Task<UpdateMembershipResult> RemoveMembershipAsync(Guid groupId, Guid memberId, CancellationToken cancellationToken);
+    Task<UpdateGroupMembershipResult> RemoveMembershipAsync(Guid groupId, Guid memberId, CancellationToken cancellationToken);
 }

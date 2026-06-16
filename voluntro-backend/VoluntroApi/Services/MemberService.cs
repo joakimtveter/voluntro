@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using VoluntroApi.Data;
 using VoluntroApi.Dtos.Members;
+using VoluntroApi.Dtos.Members.Address;
+using VoluntroApi.Dtos.Members.PhoneNumber;
 using VoluntroApi.Dtos.Shared;
 using VoluntroApi.Dtos.Tags;
 using VoluntroApi.Models;
@@ -38,6 +40,10 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
             (MemberSortBy.FirstName, SortDirection.Desc) => baseQuery.OrderByDescending(m => EF.Functions.Collate(m.FirstName, nb)).ThenByDescending(m => EF.Functions.Collate(m.LastName, nb)),
             (MemberSortBy.DateOfBirth, SortDirection.Asc) => baseQuery.OrderBy(m => m.DateOfBirth),
             (MemberSortBy.DateOfBirth, SortDirection.Desc) => baseQuery.OrderByDescending(m => m.DateOfBirth),
+            (MemberSortBy.CreatedAt, SortDirection.Asc) => baseQuery.OrderBy(m => m.CreatedAt),
+            (MemberSortBy.CreatedAt, SortDirection.Desc) => baseQuery.OrderByDescending(m => m.CreatedAt),
+            (MemberSortBy.UpdatedAt, SortDirection.Asc) => baseQuery.OrderBy(m => m.UpdatedAt),
+            (MemberSortBy.UpdatedAt, SortDirection.Desc) => baseQuery.OrderByDescending(m => m.UpdatedAt),
             (MemberSortBy.LastName, SortDirection.Desc) => baseQuery.OrderByDescending(m => EF.Functions.Collate(m.LastName, nb)).ThenByDescending(m => EF.Functions.Collate(m.FirstName, nb)),
             _ => baseQuery.OrderBy(m => EF.Functions.Collate(m.LastName, nb)).ThenBy(m => EF.Functions.Collate(m.FirstName, nb)),
         };
@@ -69,6 +75,8 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
             .AsNoTracking()
             .Include(m => m.MemberTags)
             .ThenInclude(mt => mt.Tag)
+            .Include(m => m.PhoneNumbers)
+            .Include(m => m.Addresses)
             .Where(m => m.Id == memberId && (includeDeleted || !m.IsDeleted))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -173,6 +181,10 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
         member.UpdatedAt = DateTimeOffset.UtcNow;
 
         await db.SaveChangesAsync(cancellationToken);
+        await db.MemberTags.Where(mt => mt.MemberId == memberId).ExecuteDeleteAsync(cancellationToken);
+        await db.MemberPhoneNumbers.Where(mp => mp.MemberId == memberId).ExecuteDeleteAsync(cancellationToken);
+        await db.MemberAddresses.Where(ma => ma.MemberId == memberId).ExecuteDeleteAsync(cancellationToken);
+        
         logger.LogInformation("GDPR erasure completed MemberId={MemberId}", memberId);
         return true;
     }
@@ -253,6 +265,211 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
         return count > 0 ? RemoveTagResult.Success : RemoveTagResult.TagNotFound;
     }
 
+    /// <inheritdoc/>
+    public async Task<MemberPhoneNumberDto?> AddPhoneNumberAsync(Guid memberId, CreateMemberPhoneNumberRequest request, CancellationToken cancellationToken)
+    {
+        var memberExist = await db.Members.AnyAsync(m => m.Id == memberId && !m.IsDeleted, cancellationToken);
+        if (!memberExist)
+        {
+            logger.LogWarning("AddPhoneNumber failed — member not found MemberId={MemberId}", memberId);
+            return null;
+        }
+
+        var memberPhoneNumber = new MemberPhoneNumber
+        {
+            MemberId = memberId,
+            PhoneType = request.PhoneType,
+            CountryCode = request.CountryCode,
+            PhoneNumber = request.PhoneNumber,
+            IsPrimary = request.IsPrimary,
+            CanReceiveTexts = request.CanReceiveTexts,
+        };
+            
+        db.MemberPhoneNumbers.Add(memberPhoneNumber);
+        await db.SaveChangesAsync(cancellationToken);
+    
+        logger.LogInformation("MemberPhoneNumber added MemberId={MemberId} PhoneNumber={PhoneNumber}", memberId, memberPhoneNumber.PhoneNumber);
+        
+        return new MemberPhoneNumberDto
+        {
+            Id = memberPhoneNumber.Id, 
+            PhoneType = memberPhoneNumber.PhoneType, 
+            CountryCode = memberPhoneNumber.CountryCode, 
+            PhoneNumber = memberPhoneNumber.PhoneNumber, 
+            IsPrimary = memberPhoneNumber.IsPrimary, 
+            CanReceiveTexts = memberPhoneNumber.CanReceiveTexts
+        };
+    }
+    
+    /// <inheritdoc/>
+    public async Task<MemberPhoneNumberDto?> UpdatePhoneNumberAsync(Guid memberId, Guid phoneNumberId, UpdateMemberPhoneNumberRequest request,
+        CancellationToken cancellationToken)
+    {
+        var memberExist = await db.Members.AnyAsync(m => m.Id == memberId && !m.IsDeleted, cancellationToken);
+        if (!memberExist)
+        {
+            logger.LogWarning("UpdatePhoneNumber failed — member not found MemberId={MemberId}", memberId);
+            return null;
+        }
+        var phoneNumber = await db.MemberPhoneNumbers.FirstOrDefaultAsync(p => p.Id == phoneNumberId && p.MemberId == memberId, cancellationToken);
+        if (phoneNumber is null)
+        {
+            logger.LogWarning("UpdatePhoneNumber failed — No record found for MemberId={MemberId} and PhoneNumberId={PhoneNumberId}", memberId, phoneNumberId);
+            return null;
+        }
+        
+        phoneNumber.PhoneType = request.PhoneType;
+        phoneNumber.CountryCode = request.CountryCode;
+        phoneNumber.PhoneNumber = request.PhoneNumber;
+        phoneNumber.IsPrimary = request.IsPrimary;
+        phoneNumber.CanReceiveTexts = request.CanReceiveTexts;
+    
+        await db.SaveChangesAsync(cancellationToken);
+
+        return new MemberPhoneNumberDto
+        {
+            Id = phoneNumber.Id,
+            PhoneType = phoneNumber.PhoneType,
+            CountryCode = phoneNumber.CountryCode,
+            PhoneNumber = phoneNumber.PhoneNumber,
+            IsPrimary = phoneNumber.IsPrimary,
+            CanReceiveTexts = phoneNumber.CanReceiveTexts
+        };
+    }
+    
+    /// <inheritdoc/>
+    public async Task<bool?> DeletePhoneNumberAsync(Guid memberId, Guid phoneNumberId, CancellationToken cancellationToken)
+    {
+        var memberExist = await db.Members.AnyAsync(m => m.Id == memberId && !m.IsDeleted, cancellationToken);
+
+        if (!memberExist)
+        {
+            logger.LogWarning("Delete phone number failed — member not found MemberId={MemberId}", memberId);
+            return null;
+        }
+        
+        var count = await db.MemberPhoneNumbers
+            .Where(p => p.Id == phoneNumberId && p.MemberId == memberId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        if (count <= 0)
+        {
+            logger.LogWarning("Delete phone number failed - No Record found.");
+            return false;
+        }
+        
+        logger.LogInformation("MemberPhoneNumber deleted MemberId={MemberId} PhoneNumberId={PhoneNumberId}", memberId, phoneNumberId);
+        return true;
+    }
+    
+    /// <inheritdoc/>
+    public async Task<MemberAddressDto?> AddAddressAsync(Guid memberId, CreateMemberAddressRequest request, CancellationToken cancellationToken)
+    {
+        var memberExist = await db.Members.AnyAsync(m => m.Id == memberId && !m.IsDeleted, cancellationToken);
+        if (!memberExist)
+        {
+            logger.LogWarning("Add address failed — member not found MemberId={MemberId}", memberId);
+            return null;
+        }
+
+        var memberAddress = new MemberAddress 
+        {
+            MemberId = memberId,
+            Name = request.Name,
+            StreetAddress = request.StreetAddress,
+            StreetAddress2 = request.StreetAddress2,
+            PostalCode =  request.PostalCode,
+            City = request.City,
+            Country = request.Country,
+            IsPostalAddress = request.IsPostalAddress,
+            IsVisitingAddress = request.IsVisitingAddress
+        };
+            
+        db.MemberAddresses.Add(memberAddress);
+        await db.SaveChangesAsync(cancellationToken);
+    
+        logger.LogInformation("Member address added to MemberId={MemberId}.", memberId);
+        
+        return new MemberAddressDto
+        {
+            Id = memberAddress.Id, 
+            Name = memberAddress.Name,
+            StreetAddress = memberAddress.StreetAddress,
+            StreetAddress2 = memberAddress.StreetAddress2,
+            PostalCode =  memberAddress.PostalCode,
+            City = memberAddress.City,
+            Country = memberAddress.Country,
+            IsPostalAddress = memberAddress.IsPostalAddress,
+            IsVisitingAddress = memberAddress.IsVisitingAddress
+        };
+    }
+
+    /// <inheritdoc/>
+    public async Task<MemberAddressDto?> UpdateAddressAsync(Guid memberId, Guid addressId,
+        UpdateMemberAddressRequest request, CancellationToken cancellationToken)
+    {
+        var memberExist = await db.Members.AnyAsync(m => m.Id == memberId && !m.IsDeleted, cancellationToken);
+        if (!memberExist)
+        {
+            logger.LogWarning("UpdateAddress failed — member not found MemberId={MemberId}", memberId);
+            return null;
+        }
+        var address = await db.MemberAddresses.FirstOrDefaultAsync(a => a.Id == addressId && a.MemberId == memberId, cancellationToken);
+        if (address is null)
+        {
+            logger.LogWarning("UpdateAddress failed — No record found for MemberId={MemberId} and AddressId={AddressId}", memberId, addressId);
+            return null;
+        }
+        
+        address.Name = request.Name;
+        address.StreetAddress = request.StreetAddress;
+        address.StreetAddress2 = request.StreetAddress2;
+        address.PostalCode = request.PostalCode;
+        address.City = request.City;
+        address.Country = request.Country;
+        address.IsPostalAddress = request.IsPostalAddress;
+        address.IsVisitingAddress = request.IsVisitingAddress;
+        
+        await db.SaveChangesAsync(cancellationToken);
+
+        return new MemberAddressDto
+        {
+            Id = address.Id,
+            Name = address.Name,
+            StreetAddress = address.StreetAddress,
+            StreetAddress2 = address.StreetAddress2,
+            PostalCode = address.PostalCode,
+            City = address.City,
+            Country = address.Country,
+            IsPostalAddress = address.IsPostalAddress,
+            IsVisitingAddress = address.IsVisitingAddress,
+        };
+    }
+
+    public async Task<bool?> DeleteAddressAsync(Guid memberId, Guid addressId, CancellationToken cancellationToken)
+    {
+        var memberExist = await db.Members.AnyAsync(m => m.Id == memberId && !m.IsDeleted, cancellationToken);
+
+        if (!memberExist)
+        {
+            logger.LogWarning("Delete address failed — member not found MemberId={MemberId}", memberId);
+            return null;
+        }
+        
+        var count = await db.MemberAddresses
+            .Where(a => a.Id == addressId && a.MemberId == memberId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        if (count <= 0)
+        {
+            logger.LogWarning("Delete address failed - No Record found.");
+            return false;
+        }
+        
+        logger.LogInformation("Member address deleted MemberId={MemberId} AddressId={AddressId}", memberId, addressId);
+        return true;
+    }
+
 
     private static MemberDetails ToDto(Member m) => new()
     {
@@ -263,6 +480,27 @@ public class MemberService(AppDbContext db, ILogger<MemberService> logger) : IMe
         Email = m.Email,
         DateOfBirth = m.DateOfBirth,
         Tags = m.MemberTags.Select(mt => new TagDto { Id = mt.Tag.Id, Name = mt.Tag.Name, Color = mt.Tag.Color }).ToList(),
+        PhoneNumbers = m.PhoneNumbers.Select(p => new MemberPhoneNumberDto
+        {
+            Id = p.Id,
+            PhoneType = p.PhoneType,
+            CountryCode = p.CountryCode,
+            PhoneNumber = p.PhoneNumber,
+            IsPrimary = p.IsPrimary,
+            CanReceiveTexts = p.CanReceiveTexts,
+        }).ToList(),
+        Addresses = m.Addresses.Select(a => new MemberAddressDto
+        {
+            Id = a.Id,
+            Name = a.Name,
+            StreetAddress = a.StreetAddress,
+            StreetAddress2 = a.StreetAddress2,
+            PostalCode = a.PostalCode,
+            City = a.City,
+            Country = a.Country,
+            IsPostalAddress = a.IsPostalAddress,
+            IsVisitingAddress = a.IsVisitingAddress,
+        }).ToList(),
         LegalGender = m.LegalGender,
         CreatedAt = m.CreatedAt,
         UpdatedAt = m.UpdatedAt,

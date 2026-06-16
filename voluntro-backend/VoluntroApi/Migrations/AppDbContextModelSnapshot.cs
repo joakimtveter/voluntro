@@ -146,6 +146,57 @@ namespace VoluntroApi.Migrations
                     b.ToTable("Members");
                 });
 
+            modelBuilder.Entity("VoluntroApi.Models.MemberAddress", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsPostalAddress")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsVisitingAddress")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("StreetAddress")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("StreetAddress2")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MemberId");
+
+                    b.ToTable("MemberAddresses");
+                });
+
             modelBuilder.Entity("VoluntroApi.Models.MemberGroup", b =>
                 {
                     b.Property<Guid>("MemberId")
@@ -162,6 +213,43 @@ namespace VoluntroApi.Migrations
                     b.HasIndex("GroupId");
 
                     b.ToTable("MemberGroups");
+                });
+
+            modelBuilder.Entity("VoluntroApi.Models.MemberPhoneNumber", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("CanReceiveTexts")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PhoneType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MemberId");
+
+                    b.ToTable("MemberPhoneNumbers");
                 });
 
             modelBuilder.Entity("VoluntroApi.Models.MemberTag", b =>
@@ -312,6 +400,15 @@ namespace VoluntroApi.Migrations
                     b.Navigation("MemberType");
                 });
 
+            modelBuilder.Entity("VoluntroApi.Models.MemberAddress", b =>
+                {
+                    b.HasOne("VoluntroApi.Models.Member", null)
+                        .WithMany("Addresses")
+                        .HasForeignKey("MemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("VoluntroApi.Models.MemberGroup", b =>
                 {
                     b.HasOne("VoluntroApi.Models.Group", "Group")
@@ -329,6 +426,15 @@ namespace VoluntroApi.Migrations
                     b.Navigation("Group");
 
                     b.Navigation("Member");
+                });
+
+            modelBuilder.Entity("VoluntroApi.Models.MemberPhoneNumber", b =>
+                {
+                    b.HasOne("VoluntroApi.Models.Member", null)
+                        .WithMany("PhoneNumbers")
+                        .HasForeignKey("MemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("VoluntroApi.Models.MemberTag", b =>
@@ -359,7 +465,11 @@ namespace VoluntroApi.Migrations
 
             modelBuilder.Entity("VoluntroApi.Models.Member", b =>
                 {
+                    b.Navigation("Addresses");
+
                     b.Navigation("MemberTags");
+
+                    b.Navigation("PhoneNumbers");
                 });
 
             modelBuilder.Entity("VoluntroApi.Models.Tag", b =>

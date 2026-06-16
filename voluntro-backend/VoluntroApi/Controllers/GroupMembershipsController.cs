@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using VoluntroApi.Dtos.GroupMemberships;
 using VoluntroApi.Dtos.Groups;
 using VoluntroApi.Dtos.Members;
-using VoluntroApi.Dtos.Memberships;
 using VoluntroApi.Services;
 
 namespace VoluntroApi.Controllers;
@@ -65,7 +65,7 @@ public class GroupMembershipsController(IGroupMembershipService groupMembershipS
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<UpdateMembershipResponse>> AddMembership([FromBody] UpdateMembershipRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<UpdateGroupMembershipResponse>> AddMembership([FromBody] UpdateGroupMembershipRequest request, CancellationToken cancellationToken)
     {
         logger.LogDebug("Adding membership for MemberId={MemberId} to GroupId={GroupId}", request.MemberId, request.GroupId);
 
@@ -73,10 +73,10 @@ public class GroupMembershipsController(IGroupMembershipService groupMembershipS
 
         return result switch
         {
-            UpdateMembershipResult.Success => Ok(new UpdateMembershipResponse { MemberId = request.MemberId, GroupId = request.GroupId }),
-            UpdateMembershipResult.GroupNotFound => NotFound("Group not found"),
-            UpdateMembershipResult.MemberNotFound => NotFound("Member not found"),
-            UpdateMembershipResult.AlreadyMember => Conflict("Member is already in this group"),
+            UpdateGroupMembershipResult.Success => Ok(new UpdateGroupMembershipResponse { MemberId = request.MemberId, GroupId = request.GroupId }),
+            UpdateGroupMembershipResult.GroupNotFound => NotFound("Group not found"),
+            UpdateGroupMembershipResult.MemberNotFound => NotFound("Member not found"),
+            UpdateGroupMembershipResult.AlreadyMember => Conflict("Member is already in this group"),
             _ => throw new Exception("Unexpected result from group service")
         };
     }
@@ -88,7 +88,7 @@ public class GroupMembershipsController(IGroupMembershipService groupMembershipS
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<UpdateMembershipResponse>> RemoveMembership([FromBody] UpdateMembershipRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<UpdateGroupMembershipResponse>> RemoveMembership([FromBody] UpdateGroupMembershipRequest request, CancellationToken cancellationToken)
     {
         logger.LogDebug("Removing Membership for MemberId={MemberId} to GroupId={GroupId}", request.MemberId, request.GroupId);
 
@@ -96,10 +96,10 @@ public class GroupMembershipsController(IGroupMembershipService groupMembershipS
 
         return result switch
         {
-            UpdateMembershipResult.Success => Ok(new UpdateMembershipResponse { MemberId = request.MemberId, GroupId = request.GroupId }),
-            UpdateMembershipResult.GroupNotFound => NotFound("Group not found"),
-            UpdateMembershipResult.MemberNotFound => NotFound("Member not found"),
-            UpdateMembershipResult.NotMember => Conflict("Member was not in this group"),
+            UpdateGroupMembershipResult.Success => Ok(new UpdateGroupMembershipResponse { MemberId = request.MemberId, GroupId = request.GroupId }),
+            UpdateGroupMembershipResult.GroupNotFound => NotFound("Group not found"),
+            UpdateGroupMembershipResult.MemberNotFound => NotFound("Member not found"),
+            UpdateGroupMembershipResult.NotMember => Conflict("Member was not in this group"),
             _ => throw new Exception("Unexpected result from group service")
         };
     }

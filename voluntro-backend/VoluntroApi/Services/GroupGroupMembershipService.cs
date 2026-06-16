@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using VoluntroApi.Data;
+using VoluntroApi.Dtos.GroupMemberships;
 using VoluntroApi.Dtos.Groups;
 using VoluntroApi.Dtos.Members;
-using VoluntroApi.Dtos.Memberships;
 using VoluntroApi.Dtos.Shared;
 using VoluntroApi.Models;
 
@@ -64,7 +64,7 @@ public class GroupGroupMembershipService(AppDbContext db, ILogger<GroupService> 
     }
     
     /// <inheritdoc/>
-    public async Task<UpdateMembershipResult> AddMembershipAsync(Guid groupId, Guid memberId, CancellationToken cancellationToken)
+    public async Task<UpdateGroupMembershipResult> AddMembershipAsync(Guid groupId, Guid memberId, CancellationToken cancellationToken)
     {
         logger.LogDebug("Adding member MemberId={MemberId} to group GroupId={GroupId}", memberId, groupId);
 
@@ -72,21 +72,21 @@ public class GroupGroupMembershipService(AppDbContext db, ILogger<GroupService> 
         if (!groupExists)
         {
             logger.LogWarning("AddMember failed — group not found GroupId={GroupId}", groupId);
-            return UpdateMembershipResult.GroupNotFound;
+            return UpdateGroupMembershipResult.GroupNotFound;
         }
 
         var memberExists = await db.Members.AnyAsync(m => m.Id == memberId && !m.IsDeleted, cancellationToken);
         if (!memberExists)
         {
             logger.LogWarning("AddMember failed — member not found MemberId={MemberId}", memberId);
-            return UpdateMembershipResult.MemberNotFound;
+            return UpdateGroupMembershipResult.MemberNotFound;
         }
 
         var alreadyMember = await db.MemberGroups.AnyAsync(mg => mg.GroupId == groupId && mg.MemberId == memberId, cancellationToken);
         if (alreadyMember)
         {
             logger.LogWarning("AddMember failed — member MemberId={MemberId} is already in GroupId={GroupId}", memberId, groupId);
-            return UpdateMembershipResult.AlreadyMember;
+            return UpdateGroupMembershipResult.AlreadyMember;
         }
 
         // Collect the target group and all its ancestors.
@@ -129,24 +129,24 @@ public class GroupGroupMembershipService(AppDbContext db, ILogger<GroupService> 
         logger.LogInformation("Member MemberId={MemberId} added to GroupId={GroupId} and {AncestorCount} ancestor group(s)",
             memberId, groupId, groupsToEnroll.Count - 1);
 
-        return UpdateMembershipResult.Success;
+        return UpdateGroupMembershipResult.Success;
     }
 
     /// <inheritdoc/>
-    public async Task<UpdateMembershipResult> RemoveMembershipAsync(Guid groupId, Guid memberId, CancellationToken cancellationToken)
+    public async Task<UpdateGroupMembershipResult> RemoveMembershipAsync(Guid groupId, Guid memberId, CancellationToken cancellationToken)
     {
         var groupExists = await db.Groups.AnyAsync(g => g.Id == groupId && !g.IsDeleted, cancellationToken);
         if (!groupExists)
         {
             logger.LogWarning("Delete membership failed — group not found: GroupId={GroupId}", groupId);
-            return UpdateMembershipResult.GroupNotFound;
+            return UpdateGroupMembershipResult.GroupNotFound;
         }
         
         var memberExists = await db.Members.AnyAsync(m => m.Id == memberId && !m.IsDeleted, cancellationToken);
         if (!memberExists)
         {
             logger.LogWarning("Delete membership failed — member not found: MemberId={MemberId}", memberId);
-            return UpdateMembershipResult.MemberNotFound;
+            return UpdateGroupMembershipResult.MemberNotFound;
         }
         
         var groupsToRemove = new List<Guid>();
@@ -174,10 +174,10 @@ public class GroupGroupMembershipService(AppDbContext db, ILogger<GroupService> 
         if (deleted == 0)
         {
             logger.LogWarning("Delete membership failed — membership not found: MemberId={MemberId} GroupId={GroupId}", memberId, groupId);
-            return UpdateMembershipResult.NotMember;
+            return UpdateGroupMembershipResult.NotMember;
         }
 
         logger.LogInformation("Removed MemberId={MemberId} from GroupId={GroupId}", memberId, groupId);
-        return UpdateMembershipResult.Success;
+        return UpdateGroupMembershipResult.Success;
     }
 }

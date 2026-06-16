@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace VoluntroApi.Dtos.Members;
 
-public enum MemberSortBy { LastName, FirstName, DateOfBirth }
+public enum MemberSortBy { LastName, FirstName, DateOfBirth, CreatedAt, UpdatedAt }
 public enum SortDirection { Asc, Desc }
 public enum TagFilterMode { Any, All }
 

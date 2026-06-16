@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using VoluntroApi.Dtos.Members;
+using VoluntroApi.Dtos.Members.PhoneNumber;
 using VoluntroApi.Dtos.Shared;
 using VoluntroApi.Dtos.Tags;
 using VoluntroApi.Services;
@@ -211,4 +212,56 @@ public class MembersController(
         
         return NoContent();
     }
+
+
+    [HttpPost("{memberId:guid}/PhoneNumber", Name = "AddPhoneNumber")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddPhoneNumberToMember(
+        [FromRoute] Guid memberId, [FromBody] CreateMemberPhoneNumberRequest request,
+        CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Adding phone number to member MemberID={MemberId}", memberId);
+        var response = await memberService.AddPhoneNumberAsync(memberId, request, cancellationToken);
+        
+        if (response is null) return NotFound();
+        
+        return Ok(response);
+    }
+    
+    [HttpPut("{memberId:guid}/PhoneNumber/{phoneNumberId:guid}", Name = "UpdatePhoneNumber")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdatePhoneNumber(
+        [FromRoute] Guid memberId, [FromRoute] Guid phoneNumberId, [FromBody] UpdateMemberPhoneNumberRequest request,
+        CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Updating phone number with PhoneNumberID={PhoneNumberId} for member with MemberID={MemberId}",  phoneNumberId, memberId);
+        
+        var response = await memberService.UpdatePhoneNumberAsync(memberId, phoneNumberId, request, cancellationToken);
+        
+        if (response is null) return NotFound("Could not find member or phone number record.");
+        
+        return Ok(response);
+    }
+    
+    [HttpDelete("{memberId:guid}/phone-number/{phoneNumberId:guid}", Name = "DeletePhoneNumber")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeletePhoneNumber(
+        [FromRoute] Guid memberId, [FromRoute] Guid phoneNumberId, [FromBody] UpdateMemberPhoneNumberRequest request,
+        CancellationToken cancellationToken)
+    {
+        logger.LogDebug("Deleting phone number with PhoneNumberID={PhoneNumberId} for member with MemberID={MemberId}",  phoneNumberId, memberId);
+
+        var response = await memberService.DeletePhoneNumberAsync(memberId, phoneNumberId, cancellationToken);
+
+        return response switch
+        {
+            null => NotFound("Could not find member"),
+            false => NotFound("Could not find phone number record."),
+            _ => NoContent()
+        };
+    }
+    
 }

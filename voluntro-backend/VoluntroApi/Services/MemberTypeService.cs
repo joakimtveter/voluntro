@@ -74,9 +74,11 @@ public class MemberTypeService(AppDbContext db, ILogger<MemberTypeService> logge
             return DeleteMemberTypeResult.HasMembers;
         }
 
-        await db.MemberTypes.Where(mt => mt.Id == id).ExecuteDeleteAsync(cancellationToken);
+        var count = await db.MemberTypes.Where(mt => mt.Id == id).ExecuteDeleteAsync(cancellationToken);
 
-        logger.LogInformation("Member type deleted MemberTypeId={MemberTypeId}", id);
+        if (count <= 0) throw new Exception("Delete failed - unknown error");
+       
+        logger.LogInformation("Member type deleted MemberTypeId={MemberTypeId}", id); 
         return DeleteMemberTypeResult.Success;
     }
 

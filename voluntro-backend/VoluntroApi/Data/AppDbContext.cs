@@ -30,7 +30,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     
     /// <summary>Gets the member-group membership join table.</summary>
     public DbSet<MemberGroup> MemberGroups => Set<MemberGroup>();
-    
+
+    /// <summary>Gets the member addresses table.</summary>
+    public DbSet<MemberAddress> MemberAddresses => Set<MemberAddress>();
+
+    /// <summary>Gets the member phone numbers table.</summary>
+    public DbSet<MemberPhoneNumber> MemberPhoneNumbers => Set<MemberPhoneNumber>();
+
     /// <summary>Gets the member-tags join table.</summary>
     public DbSet<MemberTag> MemberTags => Set<MemberTag>();
 
@@ -45,6 +51,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Venue>().Property(v => v.Id).HasValueGenerator<GuidV7Generator>();
         modelBuilder.Entity<Group>().Property(g => g.Id).HasValueGenerator<GuidV7Generator>();
         modelBuilder.Entity<Tag>().Property(t => t.Id).HasValueGenerator<GuidV7Generator>();
+        modelBuilder.Entity<MemberAddress>().Property(ma => ma.Id).HasValueGenerator<GuidV7Generator>();
+        modelBuilder.Entity<MemberPhoneNumber>().Property(mp => mp.Id).HasValueGenerator<GuidV7Generator>();
         
         modelBuilder.Entity<MemberType>().HasData(new MemberType
         {
