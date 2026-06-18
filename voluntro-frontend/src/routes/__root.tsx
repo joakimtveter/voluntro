@@ -1,7 +1,6 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { FormDevtoolsPanel } from "@tanstack/react-form-devtools";
 import type { QueryClient } from "@tanstack/react-query";
-import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
@@ -12,8 +11,6 @@ import SiteHeader from "#/shared/components/site-header.tsx";
 import { Toaster } from "#/shared/components/ui/sonner.tsx";
 import { TooltipProvider } from "#/shared/components/ui/tooltip";
 import NotFoundPage from "#/shared/pages/not-found-page.tsx";
-
-import { queryClient } from "../router";
 
 import appCss from "../styles.css?url";
 
@@ -41,7 +38,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
   }),
   shellComponent: RootDocument,
-  notFoundComponent: () => NotFoundPage,
+  notFoundComponent: () => <NotFoundPage />,
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
@@ -52,12 +49,12 @@ function RootDocument({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body className="flex h-dvh flex-col overflow-hidden font-sans wrap-anywhere antialiased selection:bg-[rgba(79,184,178,0.24)]">
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <SiteHeader />
-            <div className="flex-1 overflow-y-auto">{children}</div>
-            <SiteFooter />
-            <Toaster />
+        <TooltipProvider>
+          <SiteHeader />
+          <div className="flex-1 overflow-y-auto">{children}</div>
+          <SiteFooter />
+          <Toaster />
+          {import.meta.env.DEV && (
             <TanStackDevtools
               config={{
                 position: "bottom-right",
@@ -77,9 +74,9 @@ function RootDocument({ children }: { children: ReactNode }) {
                 },
               ]}
             />
-            <Scripts />
-          </TooltipProvider>
-        </QueryClientProvider>
+          )}
+          <Scripts />
+        </TooltipProvider>
       </body>
     </html>
   );
