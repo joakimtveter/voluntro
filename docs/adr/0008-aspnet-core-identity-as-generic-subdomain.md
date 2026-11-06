@@ -1,0 +1,3 @@
+# ASP.NET Core Identity is treated as a generic subdomain
+
+The Identity module builds on ASP.NET Core Identity for password hashing, lockout, TOTP, recovery codes and .NET 10 passkeys, rather than reimplementing security-critical code. Because Identity's user type inherits `IdentityUser<Guid>` and is shaped by EF, it lives in the module's **Infrastructure** project, not in Domain. The Domain project models only the rules Voluntro owns: Sessions (refresh-token families and rotation), Roles as permission bundles, and role assignment invariants (e.g. there is always at least one active Administrator). A reader expecting a pure `User` aggregate in Domain should know this was deliberate.

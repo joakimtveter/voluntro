@@ -1,0 +1,3 @@
+# EF Core is used directly, without repositories
+
+Despite following DDD, Voluntro does not wrap EF Core in repositories. Command handlers load aggregates through the module's DbContext, exposed by a narrow interface (e.g. `IMembershipDbContext`). Query handlers project straight from EF with `AsNoTracking()` and skip the domain model. `DbContext` already is a unit of work, and `DbSet` already is a repository. Another layer would add indirection and hide EF's querying power without making testing easier, since integration tests run against real Postgres anyway. Don't "fix" this by introducing repositories.

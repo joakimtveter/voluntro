@@ -1,0 +1,3 @@
+# Expected failures are returned, not thrown
+
+Handlers and domain factories return `Result` / `Result<T>` carrying an `Error(Code, Type)` for every *expected* failure: validation, not found, conflict, forbidden. Exceptions are reserved for bugs and infrastructure faults, which become a generic 500. We chose this over domain exceptions caught by middleware because it keeps failure paths visible in signatures and avoids using exceptions for control flow. Error codes are stable, owned by a module, and dot-separated (`membership.person.not_found`). The API never returns translated text, and the frontend translates the codes.

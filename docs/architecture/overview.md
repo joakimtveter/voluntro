@@ -1,95 +1,113 @@
 # Voluntro — Architecture Overview
 
-**Status:** agreed architecture overview (2026-11-06). Each module and each foundation
-milestone gets its own planning session; decisions made there are recorded here.
+**Status:** agreed architecture (overview 2026-11-06, core platform grilled 2026-11-06).
+Each module and milestone gets its own planning session; decisions are recorded here,
+in [ADRs](../adr/) and in the [glossary](../../GLOSSARY.md).
 
 ## Context
 
 Voluntro is a CRM-like app for churches and other volunteer-based organizations,
-primarily for the Norwegian market (nb + en UI, Ukrainian later). The repo is empty
-(README, LICENSE, .gitignore). The user is building it to sharpen architecture and
-development skills, so the design favours explicit, compiler-enforced boundaries
-(Clean Architecture + DDD, modular monolith) over shortcuts, and minimal third-party
-dependencies (free/OSS only).
+primarily for the Norwegian market (nb + en UI, Ukrainian later). The developer is
+building it to sharpen architecture and development skills, so the design favours
+explicit, compiler-enforced boundaries (Clean Architecture + DDD, modular monolith)
+over shortcuts, and minimal third-party dependencies (free/OSS only).
 
-## Decisions
+## Key decisions
 
-| Topic | Decision |
-|---|---|
-| Hosting | **Self-hosted, single organization.** No TenantId. Future SaaS = **database-per-tenant** (only connection-string resolution changes). Rule from day one: nothing org-specific in code — name, logo, locale, time zone, enabled modules, providers live in DB/config |
-| Who logs in | **Everyone** — staff, volunteers, members, parents. `User` (Identity) ≠ `Person` (Membership); a Person optionally links to a User. Children are Persons without Users |
-| Auth transport | **JWT bearer.** Short-lived access token (≈10 min) kept in memory only; opaque refresh token in HttpOnly/Secure/SameSite=Strict cookie, rotated on every use with reuse detection |
-| Architecture style | **Modular monolith**, one deployable API, modules ready to be split into services |
-| Module layout | **4 projects per module:** Domain / Application / Infrastructure / Contracts |
-| Module toggling | **Runtime**, by an admin. Disabled ⇒ UI hidden, API returns 404 |
-| Inter-module comms | **Integration events** (in-process bus + transactional outbox/inbox in Postgres) + **small public query interfaces** in each module's Contracts. No shared tables |
-| Dev orchestration | **.NET Aspire** (AppHost + ServiceDefaults). Dev-time only; self-hosters get Docker images + docker-compose |
-| Platform | .NET 10 (LTS), C# 14, EF Core 10 + Npgsql, PostgreSQL, controllers, no repository pattern, System.Text.Json, xUnit v3 |
-| Frontend | TanStack Start, Query, Table, Router; Zod; shadcn/ui on Base UI |
+| Topic | Decision | ADR |
+|---|---|---|
+| Hosting | Self-hosted, one Organization per Installation, no TenantId. Future SaaS = database-per-tenant | [0002](../adr/0002-single-organization-installations.md) |
+| Architecture | Modular monolith; 4 projects per module (Domain / Application / Infrastructure / Contracts) | [0001](../adr/0001-modular-monolith-four-projects-per-module.md) |
+| Data access | EF Core directly, no repositories; one schema + DbContext per module | [0010](../adr/0010-ef-core-directly-no-repositories.md) |
+| Failures | `Result`/`Error` with stable error codes; exceptions only for bugs | [0003](../adr/0003-result-type-for-expected-failures.md) |
+| Use cases | Handlers injected directly + hand-written decorators; no mediator | [0004](../adr/0004-handlers-injected-directly-no-mediator.md) |
+| Integration | Outbox/inbox per module, at-least-once, plus query interfaces in Contracts | [0005](../adr/0005-outbox-and-inbox-at-least-once-delivery.md) |
+| Auth transport | ES256 JWT (10 min, in memory) + rotating refresh cookie with grace window | [0006](../adr/0006-jwt-access-tokens-with-rotating-refresh-cookie.md) |
+| Authorization | Global permissions in Roles, resolved per request; resource rules in owning module | [0007](../adr/0007-global-permissions-resolved-per-request.md) |
+| Identity | ASP.NET Core Identity as a generic subdomain (user type in Infrastructure) | [0008](../adr/0008-aspnet-core-identity-as-generic-subdomain.md) |
+| Identity emails | Sent via integration events consumed by Communication | [0009](../adr/0009-identity-emails-sent-via-integration-events.md) |
+| Who signs in | Everyone (staff, volunteers, members, parents). User ≠ Person | — |
+| Module toggling | Runtime, by an Administrator; optional modules start disabled | — |
+| Platform | .NET 10 LTS, C# 14, EF Core 10 + Npgsql, PostgreSQL, controllers, System.Text.Json, xUnit v3 | — |
+| Dev orchestration | .NET Aspire (dev only); self-host via Docker + compose | — |
+| Frontend | TanStack Start/Router/Query/Table/Form, Zod, shadcn on Base UI, Paraglide, oxlint + oxfmt | — |
 
 ## System context
 
 ```
- Browser ──► TanStack Start (SSR + client) ──► Voluntro.Api (modular monolith) ──► PostgreSQL
-                                                      │                       (schema per module)
-                                                      └──► Providers: Email / SMS / Payment
- Self-host: reverse proxy (e.g. Caddy) serves web at /  and API at /api  → same origin
+ Browser ──► Caddy ──┬─ /      ► web  (TanStack Start: SSR public routes, client-only authed routes)
+                     └─ /api/* ► api  (Voluntro.Api, modular monolith) ──► PostgreSQL (schema per module)
+                                         │                              └► /data volume (keys, files)
+                                         └──► Providers: Email (SMTP) / SMS / Payment
+ Dev: Aspire starts Postgres, MigrationService, Api, web (Vite proxies /api), Mailpit.
 ```
 
-Same origin (API behind `/api`) keeps the refresh cookie first-party and avoids CORS.
+Same origin keeps the refresh cookie first-party; CORS is never configured.
 
 ## Repository layout
 
 ```
 voluntro/
-├─ Voluntro.slnx
-├─ global.json  Directory.Build.props  Directory.Packages.props   (central package mgmt, nullable, warnings-as-errors)
+├─ Voluntro.slnx  global.json (SDK 10.0.x)  .editorconfig
+├─ Directory.Build.props     nullable, implicit usings, TreatWarningsAsErrors, AnalysisLevel=latest-recommended
+├─ Directory.Packages.props  central package management
+├─ GLOSSARY.md   docs/adr/   docs/architecture/
 ├─ src/
 │  ├─ Host/
-│  │  ├─ Voluntro.AppHost/            Aspire: Postgres, Api, web (AddViteApp), Mailpit
-│  │  ├─ Voluntro.ServiceDefaults/    OpenTelemetry, health checks, resilience
-│  │  └─ Voluntro.Api/                Composition root only: Program.cs discovers & registers modules
+│  │  ├─ Voluntro.AppHost/          Aspire
+│  │  ├─ Voluntro.ServiceDefaults/  OpenTelemetry, health checks (/health/live, /health/ready), resilience
+│  │  ├─ Voluntro.MigrationService/ applies every module's migrations, then exits
+│  │  └─ Voluntro.Api/              composition root: builder.AddModules(new PlatformModule(), …)
 │  ├─ BuildingBlocks/
-│  │  ├─ Voluntro.SharedKernel/       Entity, AggregateRoot, ValueObject, IDomainEvent, Result/Error, strongly-typed IDs
-│  │  ├─ Voluntro.BuildingBlocks.Application/     ICommand/IQuery + handlers, own dispatcher, IIntegrationEvent, IEventBus, IClock (TimeProvider)
-│  │  └─ Voluntro.BuildingBlocks.Infrastructure/  ModuleDbContext base, outbox/inbox, EF conventions (snake_case), module-toggle filter, ProblemDetails mapping, audit interceptor
-│  ├─ Modules/
-│  │  └─ <Module>/
-│  │     ├─ Voluntro.<Module>.Domain/
-│  │     ├─ Voluntro.<Module>.Application/
-│  │     ├─ Voluntro.<Module>.Infrastructure/   EF DbContext + migrations, controllers (Api/ folder), IModule implementation
-│  │     └─ Voluntro.<Module>.Contracts/        integration events, public query interfaces + DTOs
-│  └─ Providers/
-│     ├─ Voluntro.Providers.Email.Smtp/
-│     ├─ Voluntro.Providers.Sms.<Vendor>/
-│     └─ Voluntro.Providers.Payments.<Vendor>/
+│  │  ├─ Voluntro.SharedKernel/                   Entity<TId>, AggregateRoot<TId>, IDomainEvent, Result/Error, ID conventions
+│  │  ├─ Voluntro.BuildingBlocks.Application/     ICommandHandler/IQueryHandler, IValidator<T>, decorators, ICurrentUser, IIntegrationEvent, IFileStorage
+│  │  └─ Voluntro.BuildingBlocks.Infrastructure/  ModuleDbContext base, outbox/inbox + processor, interceptors (domain events, audit), EF conventions, module filter, ProblemDetails, local file storage
+│  ├─ Modules/<Module>/Voluntro.<Module>.{Domain,Application,Infrastructure,Contracts}/   (+ <Module>.http)
+│  └─ Providers/Voluntro.Providers.Email.Smtp/  (later: Sms.<Vendor>, Payments.<Vendor>, BreachedPasswords.Hibp)
 ├─ tests/
-│  ├─ Voluntro.ArchitectureTests/
-│  └─ Modules/<Module>/ Voluntro.<Module>.Domain.Tests, .Application.Tests, .IntegrationTests
-└─ web/                               TanStack Start app
+│  ├─ Voluntro.ArchitectureTests/                hand-written reflection tests
+│  └─ Modules/<Module>/ *.Domain.Tests, *.Application.Tests, *.IntegrationTests
+├─ web/                                          TanStack Start app
+└─ deploy/   Dockerfiles (api, web, migrations), docker-compose.yml, Caddyfile
 ```
 
 ## Module anatomy & dependency rules
 
 ```
-            Contracts  ◄──────────── (other modules' Application may reference ONLY this)
+            Contracts  ◄──────────── (other modules may reference ONLY this)
                ▲
- Domain ◄── Application ◄── Infrastructure ◄── Voluntro.Api (composition root)
+ Domain ◄── Application ◄── Infrastructure ◄── Voluntro.Api / MigrationService
    │            │                 │
  SharedKernel  BB.Application    BB.Infrastructure, EF Core, ASP.NET Core
 ```
 
-- **Domain**: aggregates, value objects, domain events, invariants. References SharedKernel only. No EF, no ASP.NET.
-- **Application**: use cases as command/query handlers. Depends on Domain, BuildingBlocks.Application, and *other modules' Contracts*. Uses the module's DbContext through a narrow interface (e.g. `IMembershipDbContext` exposing `DbSet`s) — EF directly, no repositories.
-- **Infrastructure**: DbContext, EF configurations, migrations, controllers, Contracts implementations, event consumers, `IModule` registration.
-- **Contracts**: plain records, no logic. Published language to the rest of the system.
-- **Forbidden**: any reference from one module to another module's Domain/Application/Infrastructure; Domain referencing EF/ASP.NET. Enforced by architecture tests (hand-written reflection tests or NetArchTest — decide in foundation session).
+- **Domain**: aggregates, value objects (C# records), domain events, invariants. References SharedKernel only.
+- **Application**: command/query handlers and validators. Uses the module's DbContext through a narrow interface (e.g. `IMembershipDbContext`). May reference other modules' Contracts.
+- **Infrastructure**: DbContext, EF configurations, migrations, controllers, Contracts implementations, event consumers, `IModule`.
+- **Contracts**: integration events, public query interfaces + DTOs, permission constants. No logic.
+- Architecture tests enforce the rules that project references can't.
 
-**CQRS without MediatR** (now commercially licensed): a small hand-written dispatcher with
-decorators (logging, validation, transaction). Commands load aggregates and call domain
-methods; queries may project straight from EF with `AsNoTracking()` and skip the domain.
-Expected failures return `Result<T>`; controllers map errors to RFC 9457 ProblemDetails
-with stable error codes.
+## SharedKernel & application conventions
+
+- **IDs**: `readonly record struct PersonId(Guid Value)` with `New()` → `Guid.CreateVersion7()`; one EF convention registers converters for all ID types.
+- **Entities**: `Entity<TId>` (identity equality), `AggregateRoot<TId>` (domain event list). Value objects are records.
+- **Failures**: `Result`/`Result<T>`, `Error(Code, ErrorType, Detail?)`; `ErrorType` ∈ Validation, NotFound, Conflict, Forbidden, Unauthorized, Failure → HTTP status.
+- **Validation**: domain invariants in value objects/factories (`Email.Create` → `Result<Email>`); request shape in hand-written `IValidator<TCommand>` run by `ValidationDecorator`; field errors as codes.
+- **Transactions**: `TransactionDecorator` commits on success; an EF interceptor dispatches domain events, writes outbox rows and sets audit fields in the same transaction.
+- **Concurrency**: Postgres `xmin` on every aggregate; `version` in DTOs and update requests; clash → 409 `common.concurrency_conflict`.
+- **Auditing**: `CreatedAt/By`, `ModifiedAt/By` via `ICurrentUser`; background work acts as `System`. Full change log later, for sensitive modules only.
+- **Time**: `TimeProvider`; `timestamptz` (UTC); Organization's time zone applied at the edges.
+- **Background jobs**: hand-written `BackgroundService` + `PeriodicTimer` (outbox, token cleanup, retention).
+- **Files**: `IFileStorage`, local disk under `/data/files` first; S3-compatible later.
+- **Ops**: options `ValidateOnStart`; no personal data in logs (IDs only); `traceId` on every response.
+
+## API conventions
+
+- Routes `/api/{module}/{resource}`; JSON camelCase, enums as strings, nulls omitted.
+- Lists: `?page=1&pageSize=25&sort=lastName:asc&search=…` → `{ items, page, pageSize, totalCount }`.
+- Errors: RFC 9457 ProblemDetails with `code`, `traceId`, and `errors: { field: [codes] }` for validation.
+- No versioning until needed.
+- Built-in `Microsoft.AspNetCore.OpenApi` document; Swagger UI (Swashbuckle `SwaggerUI`) in Development only; `.http` files per module are the versioned way to exercise endpoints.
 
 ## Module system
 
@@ -97,28 +115,27 @@ with stable error codes.
 public interface IModule
 {
     string Key { get; }                    // "checkin"
-    bool IsCore { get; }                   // core modules can't be disabled
+    bool IsCore { get; }
     IReadOnlyList<string> DependsOn { get; }
     void Register(IServiceCollection services, IConfiguration config);
     IEnumerable<Permission> Permissions { get; }
 }
 ```
 
-- `Voluntro.Api` registers every module (controllers via `AddApplicationPart`).
-- **Runtime toggle**: Platform module stores enabled modules. Controllers carry a
-  `[Module("checkin")]` attribute; a filter returns 404 when disabled (cached, invalidated on change).
-  Enabling checks `DependsOn` (e.g. Tickets → Calendar). The frontend reads
-  `GET /api/platform/modules` to build navigation.
-- Integration-event consumers keep running for disabled modules so data stays consistent if re-enabled.
+- Registered explicitly in `Program.cs`; controllers via `AddApplicationPart`.
+- Controllers carry `[Module("key")]`; a filter returns **404** when the module is disabled (in-memory activation cache, refreshed on toggle).
+- Disabled modules keep their data, keep consuming integration events, and their permissions are hidden (not removed) in the role editor.
+- Enabling checks `DependsOn`; disabling a module others depend on → 409 `platform.module.required_by`.
+- `GET /api/platform/modules` → `[{ key, enabled, isCore, dependsOn }]` drives frontend navigation and route guards.
 
 ## Module map
 
 | Module | Kind | Owns | Depends on (via Contracts) |
 |---|---|---|---|
-| **Platform** | core | Org profile, branding, locale, time zone, enabled modules | — |
-| **Identity** | core | Users, credentials, passkeys, 2FA, refresh tokens, roles → permissions | Platform |
-| **Membership** | core | People, households, relationships (guardian/child), membership status, contact info, consents | Identity (User link) |
-| **Communication** | core | Email/SMS sending, templates per locale, delivery log | Membership |
+| **Platform** | core | `Organization` (profile + localization), `ModuleActivation`, Setup | — |
+| **Identity** | core | Users, Sign-in methods, 2FA, Sessions, Roles, Invitations | Platform |
+| **Membership** | core | People, households, guardian/child relationships, membership status, consents | Identity |
+| **Communication** | core | Email sending (SMS later), templates per locale, delivery log (later) | — |
 | **Payments** | optional | Payment intents, provider callbacks, refunds | — |
 | Children's check-in | optional | Check-in sessions, check-ins, labels/pickup codes | Membership, Calendar |
 | Small groups | optional | Groups, leaders, members, meetings | Membership |
@@ -127,98 +144,93 @@ public interface IModule
 | Room booking | optional | Rooms, resources, bookings | Calendar |
 | Newsletter | optional | Lists, subscriptions, campaigns | Communication, Membership |
 
-## Data
+## Data & integration
 
-- One PostgreSQL database, **one schema and one DbContext per module**, each with its own
-  `__ef_migrations_history` table in its schema.
-- No foreign keys across schemas; modules reference each other by ID only.
-- IDs: strongly-typed wrappers around `Guid.CreateVersion7()` (time-ordered, index-friendly).
-- Timestamps as `timestamptz` (UTC) via `DateTimeOffset` + `TimeProvider`; org time zone
-  (`Europe/Oslo` by default) applied at the edges. Reconsider NodaTime when planning Calendar recurrence.
-- Audit fields + audit log via an EF `SaveChanges` interceptor.
+- One PostgreSQL database; one schema + DbContext + migrations history per module; no cross-schema FKs.
+- Migrations applied by `Voluntro.MigrationService` only (Aspire `WaitForCompletion`; compose init step).
+- Per-module `outbox`/`inbox` tables; generic `OutboxProcessor<TDbContext>`; polling ~1 s; System.Text.Json with a type-name registry (`identity.user_registered.v1`); failed after N attempts; processed rows deleted after ~7 days.
+- **Microservice path**: outbox → broker, query interfaces → HTTP/gRPC, schema → own database. Contracts don't change.
 
-## Inter-module communication
+## Platform module
 
-1. **Domain events**: raised by aggregates, dispatched in-process inside the module within the same transaction.
-2. **Integration events** (in Contracts, e.g. `PersonCreated`, `UserRegistered`): written to the module's
-   `outbox` table in the same transaction as the state change. A `BackgroundService` publishes them to
-   an in-memory bus; consumers record handled message IDs in an `inbox` table (idempotency).
-3. **Synchronous reads**: public query interfaces in Contracts (e.g. `IMembershipQueries.GetGuardians(childId)`),
-   implemented in the owning module's Infrastructure.
-
-**Microservice path**: outbox publishes to a broker (e.g. RabbitMQ) instead of memory; query
-interfaces become HTTP/gRPC clients; schema → own database. Contracts don't change.
+- **Organization**: name, short name, organisasjonsnummer (optional), contact email/phone, address, website, logo; default locale (`nb`), enabled locales, time zone (`Europe/Oslo`), country (`NO`), currency (`NOK`).
+- **ModuleActivation**: one row per optional module (enabled, changed by/at). Optional modules start disabled.
+- **Setup**: while no Users exist, `/api/platform/setup` is open, guarded by a setup token printed to the log at startup. One command creates the Organization, the first Administrator (email treated as confirmed) and enables chosen modules, then signs in. The endpoint closes permanently.
 
 ## Identity & authentication
 
-- ASP.NET Core Identity (EF stores, `identity` schema) for password hashing, lockout, TOTP, recovery codes and **.NET 10's built-in passkey (WebAuthn) support**.
-- Hand-written token service issues **JWTs signed asymmetrically (ES256/RS256)** and exposes a JWKS endpoint, so future services can validate with the public key. Validation through `Microsoft.AspNetCore.Authentication.JwtBearer` (first-party).
-- Flows:
-  - Password → if 2FA is enabled, returns `{ requiresTwoFactor, challengeToken }` (short-lived, single purpose) → TOTP or recovery code → tokens.
-  - Passkey → assertion verified → tokens (counts as MFA).
-  - `POST /api/identity/refresh` rotates the refresh token (hashed in DB, family-based reuse detection revokes the whole family).
-- **Authorization**: permission-based policies (`membership.people.read`). Each module declares
-  its permissions; roles are admin-defined bundles of permissions. Permissions travel in the JWT
-  or are resolved per request (decide in the Identity session).
-- **User ↔ Person**: on `UserRegistered`, Membership links to an existing Person by verified email or creates one. Parents act for their children through the guardian relationship in Membership.
-- **SSR caveat**: access tokens live in browser memory, so SSR can't call authenticated endpoints directly. Default: SSR for public pages (events, ticket sales, newsletter sign-up); client-side fetching for authenticated areas. Revisit in the frontend session.
+- ASP.NET Core Identity (EF stores, `identity` schema); user type in Infrastructure. A User holds Email (= username, unique, case-insensitive), `DisplayName`, `PreferredLocale`. All other personal data belongs to the Person in Membership.
+- **Accounts**: Invitations by staff; Self-registration configurable, **off by default**. Self-registered Users must confirm their email before signing in. `UserRegistered` carries sign-up names for Membership.
+- **Roles**: built-in Administrator (all permissions, immutable, ≥1 active) and a built-in default role for new Users (name TBD — see glossary); custom Roles; union of permissions.
+- **Permissions**: `{module}.{resource}.{action}`, constants in each module's Contracts, exposed via `IModule.Permissions`, catalogued by Identity at startup; `[HasPermission(...)]` via a dynamic policy provider; resolved per request through cached `IPermissionProvider` keyed by user + `perm_version`.
+- **Passwords**: NIST 800-63B — 12–128 chars, no composition rules; lockout 5 attempts / 15 min; built-in rate limiter on login, refresh, setup; optional pluggable breached-password check (off by default).
+- **Tokens**: ES256 JWT, 10 min, `kid` + JWKS (current + previous key); refresh 14 days sliding, 90-day absolute cap per family, rotation with reuse detection and 10 s grace window; refresh cookie scoped to `/api/identity/refresh`.
+- **Keys**: JWT signing keys and Data Protection key ring generated on first start in `/data/keys` (or supplied via config).
+- **Flows**: password → (if 2FA) `{ requiresTwoFactor, challengeToken }` (5 min) → TOTP or recovery code → tokens. Passkey → tokens (counts as MFA). Passkey-only accounts allowed; a User never removes their last Sign-in method.
+- **2FA**: optional TOTP with 10 single-use recovery codes; org setting (off by default) to require 2FA for Administrators; `identity.users.reset_mfa` lets an admin reset another User's 2FA and passkeys (audited, User notified).
+- **Token lifetimes**: email confirmation & invitation 7 days, password reset 1 hour. Reset always returns 202.
+- **Sessions**: Users list and revoke Sessions; password change/reset and MFA reset revoke all.
+- **User ↔ Person**: Membership consumes `UserRegistered` to link or create a Person. Users created before Membership exists are backfilled when Membership is built.
+
+## Communication (core sending)
+
+- `IEmailSender` with SMTP provider (MailKit); Mailpit in dev. Sender address from provider config, sender name = Organization name.
+- Identity publishes `UserInvited`, `EmailConfirmationRequested`, `PasswordResetRequested`, `TwoFactorReset`; Communication consumes, renders, sends.
+- Templates: Fluid (Liquid), embedded per locale (`identity.password_reset.nb.liquid`); DB overrides editable by admins later.
+- Recipient locale: User's `PreferredLocale` → Organization default.
 
 ## Internationalization
 
-- UI languages: `nb` (default) and `en`, structured so `uk` is just another message file.
-- API returns **error codes, not translated text**; the frontend translates them.
-- Backend translates only outbound content (email/SMS templates per locale) using the Person's preferred language, falling back to the org default.
-- Library choice for the frontend (Paraglide JS vs i18next) is decided in the frontend session.
+- UI `nb` (default) + `en`; `uk` later as another message file.
+- API returns codes, never translated text; frontend translates (errors, permissions, enums).
+- Locale resolution: signed-in User's `PreferredLocale` → locale cookie → `Accept-Language` → Organization default. No locale prefix in URLs (may be added for public SEO pages later).
 
 ## Pluggable providers
 
-- Abstractions in Communication/Payments Application layers: `IEmailSender`, `ISmsSender`, `IPaymentProvider`.
-- Each vendor implementation is its own project under `src/Providers/`, exposing a registration extension.
-  Selected by config (`Providers:Email:Type = "Smtp"`); secrets come from environment/user-secrets.
-- Sends go through the outbox, so a provider outage only delays messages.
-- Initial candidates: SMTP (dev: Mailpit via Aspire); Norwegian SMS/payment vendors (e.g. Vipps MobilePay) chosen per module.
+- Abstractions in the owning module's Application layer (`IEmailSender`, `ISmsSender`, `IPaymentProvider`, `IBreachedPasswordChecker`).
+- One project per vendor under `src/Providers/`, selected by config (`Providers:Email:Type = "Smtp"`); secrets from env/user-secrets.
+- Sends go through the outbox, so provider outages only delay messages.
 
 ## Frontend architecture
 
 ```
 web/src/
-├─ routes/                 thin file-based routes (TanStack Router), import from modules
-├─ modules/<module>/       api client, Zod schemas, query-key factories, components, hooks
-├─ shared/                 ui (shadcn/Base UI), api client core (token handling, refresh), i18n, auth context
+├─ routes/            thin file-based routes; _public (SSR) and _authed (ssr: false) layouts
+├─ modules/<module>/  api hooks, Zod form schemas, query-key factories, components
+├─ shared/            ui (shadcn/Base UI), api core, auth, i18n (Paraglide), theme
 ```
 
-- One app, feature folders mirroring backend modules; disabled modules are hidden from navigation and route guards.
-- The API publishes OpenAPI (built-in `Microsoft.AspNetCore.OpenApi`). Hand-written Zod schemas vs generated types is decided in the frontend session.
-- API client keeps the access token in memory, refreshes on 401 with a single-flight lock.
+- **API**: `openapi-typescript` (dev dependency) generates types from the OpenAPI document; `openapi-fetch` typed client; Zod only for forms and other untrusted input.
+- **Auth**: access token in memory; on boot the authed layout calls `/api/identity/refresh`; refresh serialized across tabs with Web Locks, new token shared via BroadcastChannel; single-flight refresh on 401.
+- **Passkeys**: native WebAuthn JSON APIs (`parseCreationOptionsFromJSON`, `parseRequestOptionsFromJSON`, `toJSON()`), no library.
+- **Forms**: TanStack Form + Zod + shadcn `Field` components; server validation codes mapped to fields.
+- **Theme & a11y**: light/dark/system; target WCAG 2.1 AA.
+- **Tooling**: pnpm; oxlint (TanStack Query plugin via `jsPlugins`, alpha; Router plugin if it loads) + oxfmt; Vitest + Testing Library; Playwright E2E with virtual WebAuthn authenticator.
+- **Dev**: Vite proxies `/api` to the Aspire-started API (same origin as production).
 
 ## Cross-cutting concerns
 
-- **GDPR** (children's data, Datatilsynet): consent records, audit log, data export, deletion/anonymization, retention policies. Designed into Membership and Check-in from the start.
-- **Observability**: `ILogger` + OpenTelemetry via ServiceDefaults; Aspire dashboard in dev.
-- **Testing**: domain unit tests; handler tests; integration tests against real Postgres (Aspire.Hosting.Testing or Testcontainers — never the EF in-memory provider); architecture tests for the dependency rules.
-- **Deployment (self-host)**: Docker images for `api` and `web`, `docker-compose.yml` with Postgres and a reverse proxy; Aspire can generate the compose file.
+- **GDPR** (children's data, Datatilsynet): consent records, audit log, data export, deletion/anonymization, retention — designed into Membership and Check-in.
+- **Observability**: `ILogger` + OpenTelemetry via ServiceDefaults; Aspire dashboard in dev; `traceId` in ProblemDetails.
+- **Testing**: domain unit tests; handler tests; integration tests via `WebApplicationFactory` + Testcontainers.PostgreSql (real Postgres per collection, reset between tests); one Aspire.Hosting.Testing smoke test; hand-written architecture tests; Playwright for auth flows.
+- **Deployment (self-host)**: Dockerfiles for `api`, `web`, `migrations`; `docker-compose.yml` with Postgres, `/data` volume, Caddy.
 
-## Suggested build order
+## Roadmap
 
-1. Solution skeleton, Aspire AppHost/ServiceDefaults, BuildingBlocks, architecture tests
-2. Platform module + runtime module toggle
-3. Identity: password login, JWT + refresh rotation
-4. Identity: TOTP 2FA, then passkeys
-5. Membership (People, households, guardians, consents)
-6. Communication + SMTP provider + outbox in practice
-7. Frontend shell: auth, i18n, module-aware navigation
-8. Feature modules, one planning session each: Small groups → Calendar → Room booking → Check-in → Payments + Tickets → Newsletter
+**Milestone 1 — Core platform** (in order):
+1. Solution skeleton, Aspire AppHost/ServiceDefaults, MigrationService, BuildingBlocks (SharedKernel, decorators, outbox/inbox, interceptors), architecture tests, integration-test harness
+2. Platform module: Organization, ModuleActivation, module filter, Setup
+3. Identity: password sign-in, JWT + refresh rotation, Sessions, Roles & Permissions, Invitations, Self-registration
+4. Communication core: SMTP/MailKit, Fluid templates, consumers for Identity events
+5. Frontend shell: i18n, auth client, Setup wizard, sign-in, invitation/reset pages, org settings & modules admin, own security page
+6. Identity: TOTP 2FA + recovery codes, then passkeys (with Playwright tests)
+7. Docker images, compose, Caddy
 
-## Open questions for later sessions
+**Afterwards** (one planning session each): Membership (incl. User backfill) → Small groups → Calendar → Room booking → Check-in → Payments + Tickets → Newsletter.
 
-- Permissions in JWT vs resolved per request
-- Architecture tests: hand-written vs NetArchTest
-- Frontend i18n library; OpenAPI codegen vs hand-written Zod
-- SSR strategy for authenticated pages
+## Open questions
+
+- Name of the built-in default Role (must not be "Member" — see glossary)
 - NodaTime for Calendar recurrence
-- Which SMS/payment vendors to support first
-
-## Verification
-
-- This deliverable: `docs/architecture/overview.md` exists, matches this plan, and every decision in the table above is reflected.
-- Later milestones verify against it: `aspire run` starts Postgres, API, web and Mailpit; architecture tests fail on any forbidden cross-module reference; each module's integration tests run against real Postgres.
+- Which SMS and payment vendors to support first
+- Scope of the full change log for sensitive modules (Membership, Check-in)
