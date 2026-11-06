@@ -56,8 +56,6 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 
-.idea
-
 # ---------------------------------------------------------------
 # Frontend (Node / TanStack Start / Vite)
 # ---------------------------------------------------------------
@@ -110,3 +108,4 @@ playwright/.cache/
 !.vscode/settings.json
 .DS_Store
 Thumbs.db
+/.idea/
