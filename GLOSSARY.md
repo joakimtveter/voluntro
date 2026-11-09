@@ -46,6 +46,10 @@ _Avoid_: Claim, Right, Scope, Access level
 The built-in Role that holds every Permission. An Organization always has at least one active Administrator.
 _Avoid_: Admin user, Superuser, Owner
 
+**Participant**:
+The built-in Role every new User receives, holding only self-service Permissions such as managing their own profile and Sessions. Having it says nothing about church membership.
+_Avoid_: Member (as a Role name), Basic, Default role, Guest
+
 **Invitation**:
 An offer, sent by email by someone in the Organization, to create a User for that email address.
 _Avoid_: Invite code, Signup link
@@ -78,4 +82,5 @@ _Avoid_: Login, Token, Device
 
 ## Flagged ambiguities
 
-- **"Member"** means two things: the built-in Role that self-registered and invited Users get by default, and a Person who formally belongs to the church (membership status, planned for the Membership module). These must not share a name. The default Role needs a different name, to be decided before Identity is implemented.
+- **"Member"** must never name a Role. It is reserved for a Person who formally belongs to the church (membership status, Membership module). The default Role is **Participant**.
+- **"Participant"** is taken by the Role. People who take part in a group, event or ticketed activity must get their own term when those Modules are planned (e.g. *Group member*, *Attendee*), never "participant".
