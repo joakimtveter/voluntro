@@ -5,7 +5,13 @@
     <Project Path="src/BuildingBlocks/Voluntro.BuildingBlocks.Infrastructure/Voluntro.BuildingBlocks.Infrastructure.csproj" />
     <Project Path="src/BuildingBlocks/Voluntro.SharedKernel/Voluntro.SharedKernel.csproj" />
   </Folder>
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/Voluntro.Api/Voluntro.Api.csproj" />
+    <Project Path="src/Host/Voluntro.AppHost/Voluntro.AppHost.csproj" />
+    <Project Path="src/Host/Voluntro.ServiceDefaults/Voluntro.ServiceDefaults.csproj" />
+  </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Voluntro.AppHost.Tests/Voluntro.AppHost.Tests.csproj" />
     <Project Path="tests/Voluntro.ArchitectureTests/Voluntro.ArchitectureTests.csproj" />
   </Folder>
 </Solution>

@@ -109,3 +109,7 @@ playwright/.cache/
 .DS_Store
 Thumbs.db
 /.idea/
+
+# Per-user IDE settings
+*.user
+*.DotSettings.user
