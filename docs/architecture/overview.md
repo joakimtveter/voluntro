@@ -60,13 +60,14 @@ voluntro/
 │  │  └─ Voluntro.Api/              composition root: builder.AddModules(new PlatformModule(), …)
 │  ├─ BuildingBlocks/
 │  │  ├─ Voluntro.SharedKernel/                   IEntityId<TSelf>, Entity<TId>, AggregateRoot<TId>, IHasDomainEvents, IDomainEvent, Result/Result<T>, Error/ErrorType
-│  │  ├─ Voluntro.BuildingBlocks.Application/     ICommandHandler/IQueryHandler, IValidator<T>, decorators, ICurrentUser, IIntegrationEvent, IFileStorage
+│  │  ├─ Voluntro.BuildingBlocks.Contracts/       IIntegrationEvent, Permission (created when first needed; depends on SharedKernel only)
+│  │  ├─ Voluntro.BuildingBlocks.Application/     ICommandHandler/IQueryHandler, IValidator<T>, decorators, ICurrentUser, IFileStorage
 │  │  └─ Voluntro.BuildingBlocks.Infrastructure/  ModuleDbContext base, outbox/inbox + processor, interceptors (domain events, audit), EF conventions, module filter, ProblemDetails, local file storage
 │  ├─ Modules/<Module>/Voluntro.<Module>.{Domain,Application,Infrastructure,Contracts}/   (+ <Module>.http)
 │  └─ Providers/Voluntro.Providers.Email.Smtp/  (later: Sms.<Vendor>, Payments.<Vendor>, BreachedPasswords.Hibp)
 ├─ tests/
 │  ├─ Voluntro.AppHost.Tests/                    Aspire.Hosting.Testing smoke test (needs Docker)
-│  ├─ Voluntro.ArchitectureTests/                hand-written reflection tests
+│  ├─ Voluntro.ArchitectureTests/                hand-written reflection tests (see Architecture tests below)
 │  ├─ BuildingBlocks/Voluntro.SharedKernel.Tests/ unit tests for the primitives (plain xUnit Assert)
 │  └─ Modules/<Module>/ *.Domain.Tests, *.Application.Tests, *.IntegrationTests
 ├─ web/                                          TanStack Start app
@@ -77,17 +78,38 @@ voluntro/
 
 ```
             Contracts  ◄──────────── (other modules may reference ONLY this)
-               ▲
+               ▲    │
+               │   SharedKernel, BB.Contracts
+               │
  Domain ◄── Application ◄── Infrastructure ◄── Voluntro.Api / MigrationService
    │            │                 │
  SharedKernel  BB.Application    BB.Infrastructure, EF Core, ASP.NET Core
 ```
 
-- **Domain**: aggregates, value objects (C# records), domain events, invariants. References SharedKernel only.
-- **Application**: command/query handlers and validators. Uses the module's DbContext through a narrow interface (e.g. `IMembershipDbContext`). May reference other modules' Contracts.
+- **Domain**: aggregates, value objects (C# records), domain events, invariants. References SharedKernel only; no packages.
+- **Application**: command/query handlers and validators. Uses the module's DbContext through a narrow interface (e.g. `IMembershipDbContext`). May reference other modules' Contracts. Never references BB.Infrastructure.
 - **Infrastructure**: DbContext, EF configurations, migrations, controllers, Contracts implementations, event consumers, `IModule`.
-- **Contracts**: integration events, public query interfaces + DTOs, permission constants. No logic.
+- **Contracts**: integration events, public query interfaces + DTOs, permission constants. No logic. References SharedKernel and BB.Contracts only; no packages, and **no other module's Contracts** (Contracts are leaves, so cross-module DTOs use `Guid`, not another module's ID types).
+- **BuildingBlocks** never reference a module. BB.Contracts and BB.Application never reference BB.Infrastructure.
 - Architecture tests enforce the rules that project references can't.
+
+### Architecture tests
+
+Allowed Voluntro references for module X (Y = any other module; ✅ allowed, ❌ forbidden):
+
+| From ↓ / To → | SharedKernel | BB.Contracts | BB.Application | BB.Infrastructure | X.Domain | X.Application | X.Infrastructure | X.Contracts | Y.Contracts | Y.(other) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| X.Domain | ✅ | ❌ | ❌ | ❌ | — | ❌ | ❌ | ❌ | ❌ | ❌ |
+| X.Contracts | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | — | ❌ | ❌ |
+| X.Application | ✅ | ✅ | ✅ | ❌ | ✅ | — | ❌ | ✅ | ✅ | ❌ |
+| X.Infrastructure | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | ❌ |
+
+- **Mechanism**: reflection over `GetReferencedAssemblies()` (ADR-0001). The compiler only records references whose types are used, so the rules govern *used* dependencies; an unused `ProjectReference` passes.
+- **Discovery**: the test project globs `ProjectReference`s to `src/BuildingBlocks/**` and `src/Modules/**` and scans its output folder for `Voluntro.*.dll`. A module is guarded as soon as it exists, before it is wired into the Api.
+- **Naming**: a module assembly is exactly `Voluntro.{Module}.{Domain|Application|Infrastructure|Contracts}` with a single-segment PascalCase module name; `BuildingBlocks` is not a module. Any other scanned `Voluntro.*` assembly fails the build as unclassified.
+- **Packages**: SharedKernel, Domain and Contracts may reference only the .NET shared framework. Exceptions (e.g. NodaTime) get an explicit allow-list when the first one arrives. Application and Infrastructure are unrestricted.
+- **Structure**: loading (assembly → referenced names) is separate from pure classification and rule functions. The rules are unit-tested on made-up reference graphs, so every rule is proven to fire even before any module exists. One `[Fact]` per rule against the real graph, failing with all `"A → B"` violations; a sanity test fails if the scan finds no assemblies.
+- **Out of scope for now**: Host projects (may reference anything) and Providers (rule added with the first provider).
 
 ## SharedKernel & application conventions
 
