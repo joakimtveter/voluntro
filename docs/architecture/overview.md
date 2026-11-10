@@ -65,6 +65,7 @@ voluntro/
 │  ├─ Modules/<Module>/Voluntro.<Module>.{Domain,Application,Infrastructure,Contracts}/   (+ <Module>.http)
 │  └─ Providers/Voluntro.Providers.Email.Smtp/  (later: Sms.<Vendor>, Payments.<Vendor>, BreachedPasswords.Hibp)
 ├─ tests/
+│  ├─ Voluntro.AppHost.Tests/                    Aspire.Hosting.Testing smoke test (needs Docker)
 │  ├─ Voluntro.ArchitectureTests/                hand-written reflection tests
 │  └─ Modules/<Module>/ *.Domain.Tests, *.Application.Tests, *.IntegrationTests
 ├─ web/                                          TanStack Start app
