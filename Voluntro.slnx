@@ -14,4 +14,7 @@
     <Project Path="tests/Voluntro.AppHost.Tests/Voluntro.AppHost.Tests.csproj" />
     <Project Path="tests/Voluntro.ArchitectureTests/Voluntro.ArchitectureTests.csproj" />
   </Folder>
+  <Folder Name="/tests/BuildingBlocks/">
+    <Project Path="tests/BuildingBlocks/Voluntro.SharedKernel.Tests/Voluntro.SharedKernel.Tests.csproj" />
+  </Folder>
 </Solution>

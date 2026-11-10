@@ -59,7 +59,7 @@ voluntro/
 │  │  ├─ Voluntro.MigrationService/ applies every module's migrations, then exits
 │  │  └─ Voluntro.Api/              composition root: builder.AddModules(new PlatformModule(), …)
 │  ├─ BuildingBlocks/
-│  │  ├─ Voluntro.SharedKernel/                   Entity<TId>, AggregateRoot<TId>, IDomainEvent, Result/Error, ID conventions
+│  │  ├─ Voluntro.SharedKernel/                   IEntityId<TSelf>, Entity<TId>, AggregateRoot<TId>, IHasDomainEvents, IDomainEvent, Result/Result<T>, Error/ErrorType
 │  │  ├─ Voluntro.BuildingBlocks.Application/     ICommandHandler/IQueryHandler, IValidator<T>, decorators, ICurrentUser, IIntegrationEvent, IFileStorage
 │  │  └─ Voluntro.BuildingBlocks.Infrastructure/  ModuleDbContext base, outbox/inbox + processor, interceptors (domain events, audit), EF conventions, module filter, ProblemDetails, local file storage
 │  ├─ Modules/<Module>/Voluntro.<Module>.{Domain,Application,Infrastructure,Contracts}/   (+ <Module>.http)
@@ -67,6 +67,7 @@ voluntro/
 ├─ tests/
 │  ├─ Voluntro.AppHost.Tests/                    Aspire.Hosting.Testing smoke test (needs Docker)
 │  ├─ Voluntro.ArchitectureTests/                hand-written reflection tests
+│  ├─ BuildingBlocks/Voluntro.SharedKernel.Tests/ unit tests for the primitives (plain xUnit Assert)
 │  └─ Modules/<Module>/ *.Domain.Tests, *.Application.Tests, *.IntegrationTests
 ├─ web/                                          TanStack Start app
 └─ deploy/   Dockerfiles (api, web, migrations), docker-compose.yml, Caddyfile
@@ -90,9 +91,13 @@ voluntro/
 
 ## SharedKernel & application conventions
 
-- **IDs**: `readonly record struct PersonId(Guid Value)` with `New()` → `Guid.CreateVersion7()`; one EF convention registers converters for all ID types.
-- **Entities**: `Entity<TId>` (identity equality), `AggregateRoot<TId>` (domain event list). Value objects are records.
-- **Failures**: `Result`/`Result<T>`, `Error(Code, ErrorType, Detail?)`; `ErrorType` ∈ Validation, NotFound, Conflict, Forbidden, Unauthorized, Failure → HTTP status.
+- **SharedKernel** is one flat namespace (`Voluntro.SharedKernel`) with no package references (enforced by an architecture test).
+- **IDs**: `readonly record struct PersonId(Guid Value) : IEntityId<PersonId>`. `IEntityId<TSelf>` declares `Guid Value`, `static abstract New()` (→ `Guid.CreateVersion7()`) and `static abstract From(Guid)`, so generic code (EF converters, tests) can create and rehydrate IDs without reflection. Each ID overrides `ToString()` to return the bare Guid (clean structured logs). `From` is total: `From(Guid.Empty)` is legal, so a bogus route ID becomes a normal NotFound. One EF convention registers converters for all `IEntityId<>` types. v7 is ordered only across milliseconds; test ordering via `Guid.CreateVersion7(DateTimeOffset)`.
+- **Entities**: abstract class `Entity<TId> where TId : struct, IEntityId<TId>`, `Id { get; private init; }`. Equal when same runtime type and same `Id` (`IEquatable`, `==`/`!=`, hash of type + Id), so different entity types sharing an ID type never compare equal. `protected Entity(TId id)` throws on an empty ID; a parameterless `protected Entity()` exists for EF materialization. No EF lazy-loading proxies (they break the runtime-type check). Value objects are records; no base class.
+- **Aggregates & domain events**: `AggregateRoot<TId> : Entity<TId>, IHasDomainEvents`, with `protected Raise(IDomainEvent)`. The non-generic `IHasDomainEvents` (read-only `DomainEvents`, `ClearDomainEvents()`) lets the EF interceptor collect events without knowing `TId`. `IDomainEvent` is a pure marker; events are records with no timestamp/ID (those belong on integration events and outbox rows).
+- **Failures**: `sealed record Error(Code, Type, Detail?)`, value equality. `Code` is validated in the constructor against `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$` (throws on mismatch); that the first segment is the owning module's key is checked by an architecture test. One static factory per type (`Error.NotFound(code, detail?)`, …). `ErrorType` ∈ Failure (= 0, so an accidental default is a 500, not a 400), Validation, NotFound, Conflict, Forbidden, Unauthorized, with explicit values → HTTP status. Modules declare error catalogs next to the aggregate in Domain: `public static class PersonErrors { public static readonly Error NotFound = Error.NotFound("membership.person.not_found"); }`. Field-level validation errors: decided with the validation decorator.
+- **Results**: `Result` holds `Error?` with `[MemberNotNullWhen(true, nameof(Error))] IsFailure`; `Result<T> : Result where T : notnull` (a missing thing is a NotFound error, not a successful null). Private constructors; factories on the non-generic `Result` (`Success()`, `Failure(error)`, `Success<T>(value)`, `Failure<T>(error)`), because CA1000 forbids statics on generic types. Implicit conversions `T → Result<T>`, `Error → Result<T>`, `Error → Result`, so handlers `return person;` / `return PersonErrors.NotFound;`. Reading `Value` from a failure throws `InvalidOperationException` (a bug); `Failure(null)` throws `ArgumentNullException`. The inheritance lets decorators constrain `where TResponse : Result`.
+- **Analyzers**: CA1716 (identifiers matching VB keywords, e.g. `Error`, `New`) is disabled in `.editorconfig`; Voluntro is C#-only.
 - **Validation**: domain invariants in value objects/factories (`Email.Create` → `Result<Email>`); request shape in hand-written `IValidator<TCommand>` run by `ValidationDecorator`; field errors as codes.
 - **Transactions**: `TransactionDecorator` commits on success; an EF interceptor dispatches domain events, writes outbox rows and sets audit fields in the same transaction.
 - **Concurrency**: Postgres `xmin` on every aggregate; `version` in DTOs and update requests; clash → 409 `common.concurrency_conflict`.
