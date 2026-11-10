@@ -125,6 +125,11 @@ dotnet_naming_rule.types_and_members_pascal.symbols = types_and_members
 dotnet_naming_rule.types_and_members_pascal.style = pascal
 dotnet_naming_rule.types_and_members_pascal.severity = warning
 
+# Analyzers
+# CA1716: identifiers matching (VB) keywords, e.g. Error, New. It only protects
+# consumers in other .NET languages; Voluntro is C#-only.
+dotnet_diagnostic.CA1716.severity = none
+
 # Tests: relax rules that only make sense for production code
 [tests/**/*.cs]
 # CA1707: underscores in identifiers; test names use them for readability
