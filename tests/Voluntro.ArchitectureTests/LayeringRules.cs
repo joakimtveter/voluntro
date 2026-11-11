@@ -1,4 +1,4 @@
-using ReferenceGraph = System.Collections.Generic.IReadOnlyDictionary<
+global using ReferenceGraph = System.Collections.Generic.IReadOnlyDictionary<
     string,
     System.Collections.Generic.IReadOnlyCollection<string>>;
 
@@ -8,7 +8,7 @@ namespace Voluntro.ArchitectureTests;
 /// The layering rules as pure functions. Each takes a reference graph
 /// (assembly name → names of the assemblies it references) and returns
 /// one "A → B" string per forbidden reference, sorted. An empty list means the rule holds.
-/// Only Voluntro.* references are judged; framework and package references are checked elsewhere.
+/// The layering rules judge only Voluntro.* references; the package rule judges only the rest.
 /// </summary>
 public static class LayeringRules
 {
@@ -51,6 +51,17 @@ public static class LayeringRules
     public static IReadOnlyList<string> BuildingBlocksReferenceNoModule(ReferenceGraph graph) =>
         ForbiddenReferences(graph, (from, to) => (from, to) is (BuildingBlockAssembly, ModuleAssembly));
 
+    public static IReadOnlyList<string> FrameworkOnlyAssembliesReferenceNoPackages(
+        ReferenceGraph graph,
+        Func<string, bool> isFramework) =>
+        Violations(graph, (from, to) =>
+            IsFrameworkOnly(AssemblyClassifier.Classify(from)) && !IsVoluntro(to) && !isFramework(to));
+
+    private static bool IsFrameworkOnly(AssemblyKind kind) =>
+        kind is SharedKernelAssembly
+            or ModuleAssembly { Layer: Layer.Domain or Layer.Contracts }
+            or BuildingBlockAssembly { Layer: Layer.Contracts };
+
     /// <summary>Voluntro assemblies in the graph whose names fit no convention; reported by name.</summary>
     public static IReadOnlyList<string> UnclassifiedAssemblies(ReferenceGraph graph) =>
         graph.Keys
@@ -59,28 +70,24 @@ public static class LayeringRules
             .Order(StringComparer.Ordinal)
             .ToList();
 
-    /// <summary>
-    /// Walks every reference between two Voluntro assemblies and reports the ones
-    /// <paramref name="isForbidden"/> rejects. Each rule only has to describe a forbidden edge.
-    /// </summary>
+    /// <summary>Layering rules: judges only references between two Voluntro assemblies, by kind.</summary>
     private static List<string> ForbiddenReferences(
         ReferenceGraph graph,
-        Func<AssemblyKind, AssemblyKind, bool> isForbidden)
+        Func<AssemblyKind, AssemblyKind, bool> isForbidden) =>
+        Violations(graph, (from, to) =>
+            IsVoluntro(to)
+            && isForbidden(AssemblyClassifier.Classify(from), AssemblyClassifier.Classify(to)));
+
+    /// <summary>Walks every reference in the graph and reports the ones <paramref name="isForbidden"/> rejects.</summary>
+    private static List<string> Violations(ReferenceGraph graph, Func<string, string, bool> isForbidden)
     {
         var violations = new List<string>();
 
         foreach (var (assembly, references) in graph)
         {
-            var from = AssemblyClassifier.Classify(assembly);
-
             foreach (var reference in references)
             {
-                if (!IsVoluntro(reference))
-                {
-                    continue;
-                }
-
-                if (isForbidden(from, AssemblyClassifier.Classify(reference)))
+                if (isForbidden(assembly, reference))
                 {
                     violations.Add($"{assembly} → {reference}");
                 }

@@ -225,6 +225,55 @@ public sealed class LayeringRulesTests
         Assert.Equal(MembershipShared, unclassified);
     }
 
+    // ── Packages ────────────────────────────────────────────────────────────────
+
+    private static bool IsFakeFramework(string name) => name.StartsWith("System.", StringComparison.Ordinal);
+
+    [Theory]
+    [InlineData(SharedKernel)]
+    [InlineData(MembershipDomain)]
+    [InlineData(MembershipContracts)]
+    [InlineData(BbContracts)]
+    public void Framework_only_assemblies_may_reference_the_framework(string assembly)
+    {
+        var graph = Graph((assembly, [Framework, "System.Collections"]));
+
+        Assert.Empty(LayeringRules.FrameworkOnlyAssembliesReferenceNoPackages(graph, IsFakeFramework));
+    }
+
+    [Theory]
+    [InlineData(SharedKernel)]
+    [InlineData(MembershipDomain)]
+    [InlineData(MembershipContracts)]
+    [InlineData(BbContracts)]
+    public void Framework_only_assemblies_referencing_a_package_is_a_violation(string assembly)
+    {
+        var graph = Graph((assembly, [Framework, Package]));
+
+        var violation = Assert.Single(LayeringRules.FrameworkOnlyAssembliesReferenceNoPackages(graph, IsFakeFramework));
+        Assert.Equal($"{assembly} → {Package}", violation);
+    }
+
+    [Theory]
+    [InlineData(MembershipApplication)]
+    [InlineData(MembershipInfrastructure)]
+    [InlineData(BbApplication)]
+    [InlineData(BbInfrastructure)]
+    public void Other_assemblies_may_reference_packages(string assembly)
+    {
+        var graph = Graph((assembly, [Framework, Package]));
+
+        Assert.Empty(LayeringRules.FrameworkOnlyAssembliesReferenceNoPackages(graph, IsFakeFramework));
+    }
+
+    [Fact]
+    public void Package_rule_leaves_Voluntro_references_to_the_layering_rules()
+    {
+        var graph = Graph((MembershipDomain, [Framework, MembershipApplication]));
+
+        Assert.Empty(LayeringRules.FrameworkOnlyAssembliesReferenceNoPackages(graph, IsFakeFramework));
+    }
+
     // ── Reporting ───────────────────────────────────────────────────────────────
 
     [Fact]
