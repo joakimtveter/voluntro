@@ -10,6 +10,11 @@ public static class AssemblyClassifier
     private const string SharedKernel = "SharedKernel";
     private const string BuildingBlocks = "BuildingBlocks";
 
+    // Names that belong to other parts of the solution. They match the module-name shape,
+    // so without this list "Voluntro.Providers.Infrastructure" would classify as a module.
+    private static readonly HashSet<string> _reservedOwners =
+        [SharedKernel, BuildingBlocks, "Providers", "Api", "AppHost", "ServiceDefaults"];
+
     public static AssemblyKind Classify(string assemblyName)
     {
         ArgumentNullException.ThrowIfNull(assemblyName);
@@ -46,5 +51,8 @@ public static class AssemblyClassifier
     };
 
     private static bool IsModuleName(string name) =>
-        name.Length > 0 && char.IsAsciiLetterUpper(name[0]) && name.All(char.IsAsciiLetterOrDigit);
+        name.Length > 0
+        && char.IsAsciiLetterUpper(name[0])
+        && name.All(char.IsAsciiLetterOrDigit)
+        && !_reservedOwners.Contains(name);
 }

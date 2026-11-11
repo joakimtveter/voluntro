@@ -46,6 +46,22 @@ public sealed class AssemblyClassifierTests
     }
 
     [Theory]
+    [InlineData("Voluntro.SharedKernel.Contracts")]
+    [InlineData("Voluntro.SharedKernel.Domain")]
+    [InlineData("Voluntro.Providers.Infrastructure")]
+    [InlineData("Voluntro.Api.Application")]
+    [InlineData("Voluntro.AppHost.Infrastructure")]
+    [InlineData("Voluntro.ServiceDefaults.Contracts")]
+    public void Reserved_names_are_never_treated_as_a_module(string name)
+    {
+        // Each matches the Voluntro.{Module}.{Layer} shape, but the owner is another part of
+        // the solution, so module rules must not apply to it.
+        var kind = AssemblyClassifier.Classify(name);
+
+        Assert.Equal(new UnclassifiedAssembly(), kind);
+    }
+
+    [Theory]
     [InlineData("Voluntro.Membership.Domian")]          // typo in the layer
     [InlineData("Voluntro.Membership.Shared")]          // not one of the four layers
     [InlineData("Voluntro.Membership")]                 // no layer
