@@ -11,6 +11,7 @@
     <Project Path="src/Host/Voluntro.ServiceDefaults/Voluntro.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Voluntro.Api.IntegrationTests/Voluntro.Api.IntegrationTests.csproj" />
     <Project Path="tests/Voluntro.AppHost.Tests/Voluntro.AppHost.Tests.csproj" />
     <Project Path="tests/Voluntro.ArchitectureTests/Voluntro.ArchitectureTests.csproj" />
   </Folder>
