@@ -17,8 +17,14 @@ public sealed record PageRequest(int Page = 1, int PageSize = PageRequest.Defaul
     public const int DefaultPageSize = 25;
     public const int MaxPageSize = 100;
 
-    /// <summary>1-based page number; at least 1.</summary>
-    public int Page { get; } = Math.Max(Page, 1);
+    /// <summary>
+    /// The largest page whose offset, <c>(Page - 1) * PageSize</c>, still fits in an <see cref="int"/>
+    /// at the largest page size. Without this cap the multiplication overflows to a negative or wrapped-around offset.
+    /// </summary>
+    public const int MaxPage = int.MaxValue / MaxPageSize;
+
+    /// <summary>1-based page number; between 1 and <see cref="MaxPage"/>.</summary>
+    public int Page { get; } = Math.Clamp(Page, 1, MaxPage);
 
     /// <summary>Items per page; between 1 and <see cref="MaxPageSize"/>.</summary>
     public int PageSize { get; } = Math.Clamp(PageSize, 1, MaxPageSize);

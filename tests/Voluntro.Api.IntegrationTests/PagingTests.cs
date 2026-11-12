@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Voluntro.Api.IntegrationTests.Sample;
+using Voluntro.BuildingBlocks.Contracts;
 
 namespace Voluntro.Api.IntegrationTests;
 
@@ -74,6 +75,20 @@ public sealed class PagingTests(VoluntroApiFactory factory) : IClassFixture<Volu
         using var body = await GetItemsAsync("?page=99");
 
         Assert.Equal(99, body.RootElement.GetProperty("page").GetInt32());
+        Assert.Equal(0, body.RootElement.GetProperty("items").GetArrayLength());
+        Assert.Equal(TotalItems, body.RootElement.GetProperty("totalCount").GetInt32());
+    }
+
+    [Theory]
+    [InlineData(100_000_000, 25)]   // (page - 1) * pageSize overflows int to a negative offset
+    [InlineData(171_798_693, 25)]   // ... and here wraps around to a small positive one (4)
+    [InlineData(int.MaxValue, 100)]
+    public async Task A_page_too_large_to_offset_is_clamped_and_empty(int requested, int pageSize)
+    {
+        using var body = await GetItemsAsync($"?page={requested}&pageSize={pageSize}");
+
+        // The largest page whose offset still fits in an int at the largest page size.
+        Assert.Equal(int.MaxValue / PageRequest.MaxPageSize, body.RootElement.GetProperty("page").GetInt32());
         Assert.Equal(0, body.RootElement.GetProperty("items").GetArrayLength());
         Assert.Equal(TotalItems, body.RootElement.GetProperty("totalCount").GetInt32());
     }
