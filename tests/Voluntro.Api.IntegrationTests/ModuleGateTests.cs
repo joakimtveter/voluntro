@@ -95,6 +95,34 @@ public sealed class ModuleGateTests(VoluntroApiFactory factory) : IClassFixture<
         Assert.Equal(HttpStatusCode.NotFound, whenDisabled.StatusCode);
     }
 
+    [Theory]
+    [InlineData("POST")]
+    [InlineData("PUT")]
+    [InlineData("DELETE")]
+    public async Task A_disabled_module_looks_like_an_unknown_route_for_a_method_its_route_does_not_support(string method)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        const string getOnlyRoute = "/api/sample/items";
+
+        // Enabled, routing itself answers 405 with an Allow header: no controller action is involved.
+        using var enabledClient = factory.CreateClient();
+        using var whenEnabled = await enabledClient.SendAsync(new HttpRequestMessage(new HttpMethod(method), getOnlyRoute), ct);
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, whenEnabled.StatusCode);
+
+        using var disabled = WithSampleModuleDisabled();
+        using var client = disabled.CreateClient();
+        using var gated = await client.SendAsync(new HttpRequestMessage(new HttpMethod(method), getOnlyRoute), ct);
+        using var unknown = await client.SendAsync(new HttpRequestMessage(new HttpMethod(method), "/api/does-not-exist"), ct);
+
+        // Disabled, a 405 (or its Allow header) would reveal that the route exists.
+        Assert.Equal(HttpStatusCode.NotFound, gated.StatusCode);
+        Assert.Empty(gated.Content.Headers.Allow);
+        Assert.Equal(unknown.Content.Headers.ContentType?.MediaType, gated.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(
+            WithoutTraceId(await unknown.Content.ReadAsStringAsync(ct)),
+            WithoutTraceId(await gated.Content.ReadAsStringAsync(ct)));
+    }
+
     private WebApplicationFactory<Program> WithSampleModuleDisabled() =>
         factory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
             services.AddSingleton<IModuleActivation>(new DisabledModules(new SampleModule().Key))));

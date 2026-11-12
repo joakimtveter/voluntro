@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 namespace Voluntro.BuildingBlocks.Infrastructure;
 
 /// <summary>
-/// Answers 404 for every endpoint of a disabled module, exactly as if the route didn't exist.
+/// Answers 404 for every request to a disabled module, exactly as if the route didn't exist.
 /// A controller belongs to the module whose assembly contains it; controllers outside any module are never gated.
 /// </summary>
 internal sealed class ModuleGateMiddleware(RequestDelegate next, IEnumerable<IModule> modules)
@@ -15,14 +15,16 @@ internal sealed class ModuleGateMiddleware(RequestDelegate next, IEnumerable<IMo
     private readonly Dictionary<Assembly, string> _moduleKeyByAssembly =
         modules.ToDictionary(module => module.GetType().Assembly, module => module.Key);
 
+    // A module's routes all start with /api/{key} (API conventions).
+    private readonly (PathString Prefix, string ModuleKey)[] _modulePrefixes =
+        [.. modules.Select(module => (new PathString("/api/" + module.Key), module.Key))];
+
     // IModuleActivation is resolved per request, so Platform's implementation may have any lifetime.
     public Task InvokeAsync(HttpContext context, IModuleActivation activation)
     {
-        var action = context.GetEndpoint()?.Metadata.GetMetadata<ControllerActionDescriptor>();
+        var moduleKey = FindModuleKey(context);
 
-        if (action is not null
-            && _moduleKeyByAssembly.TryGetValue(action.ControllerTypeInfo.Assembly, out var moduleKey)
-            && !activation.IsEnabled(moduleKey))
+        if (moduleKey is not null && !activation.IsEnabled(moduleKey))
         {
             // Behave exactly like an unknown route: no endpoint, 404, no body; status-code pages adds the body.
             // Clearing the endpoint is a safeguard, not a current fix: without it MVC's ProblemDetails writer handles
@@ -34,6 +36,37 @@ internal sealed class ModuleGateMiddleware(RequestDelegate next, IEnumerable<IMo
         }
 
         return next(context);
+    }
+
+    /// <summary>The key of the module this request belongs to, or null if it belongs to none.</summary>
+    private string? FindModuleKey(HttpContext context)
+    {
+        var endpoint = context.GetEndpoint();
+        if (endpoint is null)
+        {
+            // Nothing matched: already an unknown route.
+            return null;
+        }
+
+        // A controller action: its assembly decides, whatever its route.
+        var action = endpoint.Metadata.GetMetadata<ControllerActionDescriptor>();
+        if (action is not null)
+        {
+            return _moduleKeyByAssembly.GetValueOrDefault(action.ControllerTypeInfo.Assembly);
+        }
+
+        // Any other endpoint. Routing answers a known path with the wrong method or content type through an
+        // endpoint of its own (405 with an Allow header, 415), which says nothing about the controller it stands
+        // in for. Such a request to a disabled module's routes would reveal that they exist, so here the path decides.
+        foreach (var (prefix, moduleKey) in _modulePrefixes)
+        {
+            if (context.Request.Path.StartsWithSegments(prefix))
+            {
+                return moduleKey;
+            }
+        }
+
+        return null;
     }
 }
 
