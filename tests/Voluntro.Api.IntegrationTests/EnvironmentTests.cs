@@ -95,6 +95,28 @@ public sealed class EnvironmentTests(VoluntroApiFactory factory) : IClassFixture
     }
 
     [Fact]
+    public async Task The_OpenAPI_document_describes_both_the_success_and_the_problem_response_of_an_action()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var development = InEnvironment(Environments.Development);
+        using var client = development.CreateClient();
+
+        using var response = await client.GetAsync(OpenApiDocument, ct);
+        using var document = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+
+        // The frontend's generated types need the error shape as well as the DTO.
+        var responses = document.RootElement.GetProperty("paths").GetProperty("/api/sample/items/{id}")
+            .GetProperty("get").GetProperty("responses");
+        Assert.Equal(["200", "404"], responses.EnumerateObject().Select(status => status.Name).Order(StringComparer.Ordinal));
+
+        var ok = responses.GetProperty("200").GetProperty("content").GetProperty("application/json").GetProperty("schema");
+        Assert.EndsWith("/SampleItemDto", ok.GetProperty("$ref").GetString(), StringComparison.Ordinal);
+
+        var notFound = responses.GetProperty("404").GetProperty("content").GetProperty("application/problem+json").GetProperty("schema");
+        Assert.EndsWith("/ProblemDetails", notFound.GetProperty("$ref").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Http_requests_are_not_redirected_to_https()
     {
         var ct = TestContext.Current.CancellationToken;

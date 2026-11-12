@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Voluntro.BuildingBlocks.Application;
 using Voluntro.BuildingBlocks.Contracts;
@@ -23,7 +24,11 @@ public sealed class SampleItemsController(
         return result.IsFailure ? Problem(result.Error) : Ok(result.Value);
     }
 
+    // Declaring any response replaces the 200 MVC infers from the return type, so the 200 is declared too;
+    // its body type still comes from ActionResult<SampleItemDto>.
     [HttpGet("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
     public async Task<ActionResult<SampleItemDto>> Get(Guid id, CancellationToken cancellationToken)
     {
         var result = await getItem.HandleAsync(new GetSampleItem(SampleItemId.From(id)), cancellationToken);
