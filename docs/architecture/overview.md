@@ -137,7 +137,7 @@ Allowed Voluntro references for module X (Y = any other module; ✅ allowed, ❌
 ## API conventions
 
 - Routes `/api/{module}/{resource}`; ID segments use the `{id:guid}` constraint, so a malformed ID is a 404 like any unknown one. Actions bind `Guid` and convert with `PersonId.From(id)`.
-- JSON camelCase, enums as camelCase strings, nulls omitted. One shared method configures both MVC's `JsonOptions` and `ConfigureHttpJsonOptions` (the OpenAPI generator reads the latter).
+- JSON camelCase, enums as camelCase strings in both directions (integer enum values are rejected on input), nulls omitted. `JsonConventions.Apply` holds the rules; `AddApiJsonConventions()` applies them to both MVC's `JsonOptions` and the HTTP `JsonOptions` (used by ProblemDetails outside MVC and by the OpenAPI generator).
 - Lists: `?page=1&pageSize=25&sort=lastName:asc&search=…` → `{ items, page, pageSize, totalCount }`. `PageRequest` / `PagedList<T>` live in BuildingBlocks.Contracts so module Contracts can use them. Defaults page 1, pageSize 25; the `PageRequest` constructor clamps page to ≥ 1 and pageSize to 1–100. `sort` and `search` are raw strings until the first real list endpoint designs the sort grammar, the per-endpoint allow-list and the EF paging extension.
 - Controllers derive from an abstract `ApiController : ControllerBase` (`[ApiController]`), return `ActionResult<TDto>` and branch explicitly: `result.IsFailure ? Problem(result.Error) : Ok(result.Value)`. `[ProducesResponseType<ProblemDetails>(…)]` only where an action can return it.
 - Errors: RFC 9457 ProblemDetails with `code`, `traceId`, and `errors: { field: [codes] }` for validation.

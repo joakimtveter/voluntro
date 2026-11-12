@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Host\Voluntro.Api\Voluntro.Api.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\Voluntro.BuildingBlocks.Contracts\Voluntro.BuildingBlocks.Contracts.csproj" />
     <ProjectReference Include="..\..\src\BuildingBlocks\Voluntro.BuildingBlocks.Application\Voluntro.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\src\BuildingBlocks\Voluntro.BuildingBlocks.Infrastructure\Voluntro.BuildingBlocks.Infrastructure.csproj" />
   </ItemGroup>

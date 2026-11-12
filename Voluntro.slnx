@@ -2,6 +2,7 @@
   <Folder Name="/src/" />
   <Folder Name="/src/BuildingBlocks/">
     <Project Path="src/BuildingBlocks/Voluntro.BuildingBlocks.Application/Voluntro.BuildingBlocks.Application.csproj" />
+    <Project Path="src/BuildingBlocks/Voluntro.BuildingBlocks.Contracts/Voluntro.BuildingBlocks.Contracts.csproj" />
     <Project Path="src/BuildingBlocks/Voluntro.BuildingBlocks.Infrastructure/Voluntro.BuildingBlocks.Infrastructure.csproj" />
     <Project Path="src/BuildingBlocks/Voluntro.SharedKernel/Voluntro.SharedKernel.csproj" />
   </Folder>

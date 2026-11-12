@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Voluntro.BuildingBlocks.Application;
+using Voluntro.BuildingBlocks.Contracts;
 using Voluntro.BuildingBlocks.Infrastructure;
 
 namespace Voluntro.Api.IntegrationTests.Sample;
@@ -17,6 +18,9 @@ public sealed class SampleModule : IModule
 
     public IReadOnlyList<string> DependsOn => [];
 
-    public void Register(IServiceCollection services, IConfiguration config) =>
+    public void Register(IServiceCollection services, IConfiguration config)
+    {
         services.AddScoped<IQueryHandler<GetSampleItem, SampleItemDto>, GetSampleItemHandler>();
+        services.AddScoped<IQueryHandler<ListSampleItems, PagedList<SampleItemDto>>, ListSampleItemsHandler>();
+    }
 }
