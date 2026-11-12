@@ -76,6 +76,25 @@ public sealed class EnvironmentTests(VoluntroApiFactory factory) : IClassFixture
     }
 
     [Fact]
+    public async Task The_OpenAPI_document_names_paging_query_parameters_in_camelCase()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var development = InEnvironment(Environments.Development);
+        using var client = development.CreateClient();
+
+        using var response = await client.GetAsync(OpenApiDocument, ct);
+        using var document = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+
+        // The documented contract is ?page&pageSize&sort&search. Binding ignores case, so only the document
+        // can get this wrong, and generated clients send exactly the names it lists.
+        var list = document.RootElement.GetProperty("paths").GetProperty("/api/sample/items").GetProperty("get");
+        var queryParameters = list.GetProperty("parameters").EnumerateArray()
+            .Where(parameter => parameter.GetProperty("in").GetString() == "query")
+            .Select(parameter => parameter.GetProperty("name").GetString());
+        Assert.Equal(["page", "pageSize", "search", "sort"], queryParameters.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public async Task Http_requests_are_not_redirected_to_https()
     {
         var ct = TestContext.Current.CancellationToken;
