@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Options;
 using Voluntro.Api.Options;
+using Voluntro.BuildingBlocks.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,9 @@ builder.Services.AddSingleton<IValidateOptions<AppOptions>, AppOptionsValidator>
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+// Every module is listed here explicitly. Platform, Identity, ... are added as they are built.
+builder.AddModules();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 

@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Voluntro.ServiceDefaults\Voluntro.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Voluntro.BuildingBlocks.Infrastructure\Voluntro.BuildingBlocks.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
