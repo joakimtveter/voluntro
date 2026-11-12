@@ -35,6 +35,9 @@ var app = builder.Build();
 // a generic 500 ProblemDetails (code common.unexpected) in every environment; the exception is logged.
 app.UseExceptionHandler();
 
+// Gives every bodyless error response (unknown route, disabled module) a ProblemDetails body.
+app.UseStatusCodePages();
+
 // Return the request's trace ID with every response, so an error report can be found in the dashboard.
 // OnStarting runs just before the headers are sent, so the header survives an exception handler clearing the response.
 app.Use(async (context, next) =>
@@ -56,6 +59,12 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseRouting();
+
+// After routing (it needs the matched endpoint), before auth: a disabled module answers 404
+// before a 401/403 could reveal that it exists.
+app.UseModuleGate();
 
 app.UseAuthorization();
 
