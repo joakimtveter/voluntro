@@ -56,12 +56,15 @@ app.Use(async (context, next) =>
     await next(context);
 });
 
+// Developer tooling, Development only: the built-in OpenAPI document (/openapi/v1.json, also the source of the
+// frontend's generated types) and Swagger UI (/swagger) to browse it. Swashbuckle provides only the UI.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "Voluntro API"));
 }
 
-app.UseHttpsRedirection();
+// No UseHttpsRedirection: Caddy terminates TLS (redirects, HSTS) and talks plain HTTP to the API.
 
 app.UseRouting();
 
