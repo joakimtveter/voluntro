@@ -21,6 +21,10 @@ public sealed class SampleDiagnosticsController : ApiController
     [HttpGet("errors/{type}")]
     public ActionResult Fail(ErrorType type) => Problem(new Error(RequestedErrorCode, type));
 
+    /// <summary>The same, with the type bound from the query string: <c>GET /api/sample/errors?type=Conflict</c>.</summary>
+    [HttpGet("errors")]
+    public ActionResult FailFromQuery([FromQuery] ErrorType type) => Problem(new Error(RequestedErrorCode, type));
+
     /// <summary>A bug: an unhandled exception.</summary>
     [HttpGet("boom")]
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "MVC actions must be instance methods.")]

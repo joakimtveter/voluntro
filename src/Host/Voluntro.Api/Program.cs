@@ -21,8 +21,9 @@ builder.Services.AddControllers();
 // camelCase, enums as camelCase strings, nulls omitted: for controllers, ProblemDetails and the OpenAPI document.
 builder.Services.AddApiJsonConventions();
 
-// Query parameters are documented in camelCase too (?pageSize=25), so the OpenAPI document matches.
-builder.Services.AddApiQueryParameterConventions();
+// Route and query values: query parameters are documented in camelCase too (?pageSize=25), so the OpenAPI
+// document matches, and enums bind from their names only, never from integers.
+builder.Services.AddApiParameterConventions();
 
 // Every error response is an RFC 9457 ProblemDetails with the request's traceId.
 builder.Services.AddApiProblemDetails();
