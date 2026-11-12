@@ -1,6 +1,6 @@
 # Voluntro — Architecture Overview
 
-**Status:** agreed architecture (overview 2026-11-06, core platform grilled 2026-11-06).
+**Status:** agreed architecture (overview 2026-11-06, core platform grilled 2026-11-06, module system & API conventions grilled 2026-11-12).
 Each module and milestone gets its own planning session; decisions are recorded here,
 in [ADRs](../adr/) and in the [glossary](../../GLOSSARY.md).
 
@@ -43,6 +43,7 @@ over shortcuts, and minimal third-party dependencies (free/OSS only).
 ```
 
 Same origin keeps the refresh cookie first-party; CORS is never configured.
+Caddy terminates TLS (HTTPS redirects, HSTS); the API serves plain HTTP behind it and has no `UseHttpsRedirection`.
 
 ## Repository layout
 
@@ -60,14 +61,15 @@ voluntro/
 │  │  └─ Voluntro.Api/              composition root: builder.AddModules(new PlatformModule(), …)
 │  ├─ BuildingBlocks/
 │  │  ├─ Voluntro.SharedKernel/                   IEntityId<TSelf>, Entity<TId>, AggregateRoot<TId>, IHasDomainEvents, IDomainEvent, Result/Result<T>, Error/ErrorType
-│  │  ├─ Voluntro.BuildingBlocks.Contracts/       IIntegrationEvent, Permission (created when first needed; depends on SharedKernel only)
+│  │  ├─ Voluntro.BuildingBlocks.Contracts/       PageRequest, PagedList<T>; later IIntegrationEvent, Permission (depends on SharedKernel only)
 │  │  ├─ Voluntro.BuildingBlocks.Application/     ICommandHandler/IQueryHandler, IValidator<T>, decorators, ICurrentUser, IFileStorage
-│  │  └─ Voluntro.BuildingBlocks.Infrastructure/  ModuleDbContext base, outbox/inbox + processor, interceptors (domain events, audit), EF conventions, module filter, ProblemDetails, local file storage
+│  │  └─ Voluntro.BuildingBlocks.Infrastructure/  IModule + AddModule, module gate, ApiController, ProblemDetails, ModuleDbContext base, outbox/inbox + processor, interceptors (domain events, audit), EF conventions, local file storage
 │  ├─ Modules/<Module>/Voluntro.<Module>.{Domain,Application,Infrastructure,Contracts}/   (+ <Module>.http)
 │  └─ Providers/Voluntro.Providers.Email.Smtp/  (later: Sms.<Vendor>, Payments.<Vendor>, BreachedPasswords.Hibp)
 ├─ tests/
 │  ├─ Voluntro.AppHost.Tests/                    Aspire.Hosting.Testing smoke test (needs Docker)
 │  ├─ Voluntro.ArchitectureTests/                hand-written reflection tests (see Architecture tests below)
+│  ├─ Voluntro.Api.IntegrationTests/             WebApplicationFactory harness + test-only sample module (module system, errors, conventions)
 │  ├─ BuildingBlocks/Voluntro.SharedKernel.Tests/ unit tests for the primitives (plain xUnit Assert)
 │  └─ Modules/<Module>/ *.Domain.Tests, *.Application.Tests, *.IntegrationTests
 ├─ web/                                          TanStack Start app
@@ -87,10 +89,11 @@ voluntro/
 ```
 
 - **Domain**: aggregates, value objects (C# records), domain events, invariants. References SharedKernel only; no packages.
-- **Application**: command/query handlers and validators. Uses the module's DbContext through a narrow interface (e.g. `IMembershipDbContext`). May reference other modules' Contracts. Never references BB.Infrastructure.
+- **Application**: command/query handlers and validators. Uses the module's DbContext through a narrow interface (e.g. `IMembershipDbContext`). May reference other modules' Contracts. Never references BuildingBlocks.Infrastructure.
 - **Infrastructure**: DbContext, EF configurations, migrations, controllers, Contracts implementations, event consumers, `IModule`.
-- **Contracts**: integration events, public query interfaces + DTOs, permission constants. No logic. References SharedKernel and BB.Contracts only; no packages, and **no other module's Contracts** (Contracts are leaves, so cross-module DTOs use `Guid`, not another module's ID types).
-- **BuildingBlocks** never reference a module. BB.Contracts and BB.Application never reference BB.Infrastructure.
+- **Contracts**: integration events, public query interfaces + DTOs, permission constants. No logic. References SharedKernel and BuildingBlocks.Contracts only; no packages, and **no other module's Contracts** (Contracts are leaves, so cross-module DTOs use `Guid`, not another module's ID types).
+- **BuildingBlocks** never reference a module. BuildingBlocks.Contracts and BuildingBlocks.Application never reference BuildingBlocks.Infrastructure.
+- In the diagram above and the tables below, **BB** is short for **BuildingBlocks** (`BB.Contracts` = `Voluntro.BuildingBlocks.Contracts`).
 - Architecture tests enforce the rules that project references can't.
 
 ### Architecture tests
@@ -108,7 +111,7 @@ Allowed Voluntro references for module X (Y = any other module; ✅ allowed, ❌
 - **Known blind spot**: a dependency that is only a compile-time constant leaves no reference. `const` values and `nameof(...)` are inlined by the compiler, so an assembly that uses nothing from another assembly except e.g. a permission constant (`const string` in a module's Contracts) passes every rule. As soon as it also uses a type, method or `static readonly` field from that assembly, the reference is recorded and the rules apply. Accepted for now; closing it would need source-level analysis (a Roslyn analyzer) instead of metadata.
 - **Discovery**: the test project globs `ProjectReference`s to `src/BuildingBlocks/**` and `src/Modules/**` and scans the `Voluntro.*` assemblies listed in its own `deps.json`. A module is guarded as soon as it exists, before it is wired into the Api. The output folder itself is not scanned, so a DLL left behind by a renamed or deleted project (or another branch) is ignored.
 - **Naming**: a module assembly is exactly `Voluntro.{Module}.{Domain|Application|Infrastructure|Contracts}` with a single-segment PascalCase module name; `SharedKernel`, `BuildingBlocks`, `Providers`, `Api`, `AppHost` and `ServiceDefaults` are reserved and never a module name. Any other scanned `Voluntro.*` assembly fails the build as unclassified.
-- **Packages**: SharedKernel, BB.Contracts, Domain and Contracts may reference only the .NET shared framework (BB.Contracts included because every module's Contracts depends on it). Exceptions (e.g. NodaTime) get an explicit allow-list when the first one arrives. Application and Infrastructure are unrestricted.
+- **Packages**: SharedKernel, BuildingBlocks.Contracts, Domain and Contracts may reference only the .NET shared framework (BuildingBlocks.Contracts included because every module's Contracts depends on it). Exceptions (e.g. NodaTime) get an explicit allow-list when the first one arrives. Application and Infrastructure are unrestricted.
 - **Structure**: loading (assembly → referenced names) is separate from pure classification and rule functions. The rules are unit-tested on made-up reference graphs, so every rule is proven to fire even before any module exists. One `[Fact]` per rule against the real graph, failing with all `"A → B"` violations; a sanity test fails if any project on disk under `src/BuildingBlocks` or `src/Modules` is missing from the scan.
 - **Out of scope for now**: Host projects (may reference anything) and Providers (rule added with the first provider).
 
@@ -118,8 +121,9 @@ Allowed Voluntro references for module X (Y = any other module; ✅ allowed, ❌
 - **IDs**: `readonly record struct PersonId(Guid Value) : IEntityId<PersonId>`. `IEntityId<TSelf>` declares `Guid Value`, `static abstract New()` (→ `Guid.CreateVersion7()`) and `static abstract From(Guid)`, so generic code (EF converters, tests) can create and rehydrate IDs without reflection. Each ID overrides `ToString()` to return the bare Guid (clean structured logs). `From` is total: `From(Guid.Empty)` is legal, so a bogus route ID becomes a normal NotFound. One EF convention registers converters for all `IEntityId<>` types. v7 is ordered only across milliseconds; test ordering via `Guid.CreateVersion7(DateTimeOffset)`.
 - **Entities**: abstract class `Entity<TId> where TId : struct, IEntityId<TId>`, `Id { get; private init; }`. Equal when same runtime type and same `Id` (`IEquatable`, `==`/`!=`, hash of type + Id), so different entity types sharing an ID type never compare equal. `protected Entity(TId id)` throws on an empty ID; a parameterless `protected Entity()` exists for EF materialization. No EF lazy-loading proxies (they break the runtime-type check). Value objects are records; no base class.
 - **Aggregates & domain events**: `AggregateRoot<TId> : Entity<TId>, IHasDomainEvents`, with `protected Raise(IDomainEvent)`. The non-generic `IHasDomainEvents` (read-only `DomainEvents`, `ClearDomainEvents()`) lets the EF interceptor collect events without knowing `TId`. `IDomainEvent` is a pure marker; events are records with no timestamp/ID (those belong on integration events and outbox rows).
-- **Failures**: `sealed record Error(Code, Type, Detail?)`, value equality. `Code` is validated in the constructor against `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$` (throws on mismatch); that the first segment is the owning module's key is checked by an architecture test. One static factory per type (`Error.NotFound(code, detail?)`, …). `ErrorType` ∈ Failure (= 0, so an accidental default is a 500, not a 400), Validation, NotFound, Conflict, Forbidden, Unauthorized, with explicit values → HTTP status. Modules declare error catalogs next to the aggregate in Domain: `public static class PersonErrors { public static readonly Error NotFound = Error.NotFound("membership.person.not_found"); }`. Field-level validation errors: decided with the validation decorator.
+- **Failures**: `sealed record Error(Code, Type, Detail?)`, value equality. `Code` is validated in the constructor against `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$` (throws on mismatch); that the first segment is the owning module's key is checked by an architecture test. One static factory per type (`Error.NotFound(code, detail?)`, …). `ErrorType` ∈ Failure (= 0, so an accidental default is a 500, not a 400), Validation, NotFound, Conflict, Forbidden, Unauthorized, with explicit values → HTTP status. Modules declare error catalogs next to the aggregate in Domain: `public static class PersonErrors { public static readonly Error NotFound = Error.NotFound("membership.person.not_found"); }`. `Detail` is English text for developers; it is returned as the ProblemDetails `detail` and appears in logs, so it **never contains personal data** (IDs only). Field-level validation errors: decided with the validation decorator.
 - **Results**: `Result` holds `Error?` with `[MemberNotNullWhen(true, nameof(Error))] IsFailure`; `Result<T> : Result where T : notnull` (a missing thing is a NotFound error, not a successful null). Private constructors; factories on the non-generic `Result` (`Success()`, `Failure(error)`, `Success<T>(value)`, `Failure<T>(error)`), because CA1000 forbids statics on generic types. Implicit conversions `T → Result<T>`, `Error → Result<T>`, `Error → Result`, so handlers `return person;` / `return PersonErrors.NotFound;`. Reading `Value` from a failure throws `InvalidOperationException` (a bug); `Failure(null)` throws `ArgumentNullException`. The inheritance lets decorators constrain `where TResponse : Result`.
+- **Handlers**: `IQueryHandler<TQuery, TResponse>` with `Task<Result<TResponse>> HandleAsync(TQuery query, CancellationToken ct)`; no `IQuery<T>` marker. Command handler interfaces are added with the first command, together with the decorators. Each module registers its handlers explicitly and scoped in `IModule.Register` (`services.AddScoped<IQueryHandler<GetPerson, PersonDto>, GetPersonHandler>()`); no assembly scanning.
 - **Analyzers**: CA1716 (identifiers matching VB keywords, e.g. `Error`, `New`) is disabled in `.editorconfig`; Voluntro is C#-only.
 - **Validation**: domain invariants in value objects/factories (`Email.Create` → `Result<Email>`); request shape in hand-written `IValidator<TCommand>` run by `ValidationDecorator`; field errors as codes.
 - **Transactions**: `TransactionDecorator` commits on success; an EF interceptor dispatches domain events, writes outbox rows and sets audit fields in the same transaction.
@@ -132,11 +136,19 @@ Allowed Voluntro references for module X (Y = any other module; ✅ allowed, ❌
 
 ## API conventions
 
-- Routes `/api/{module}/{resource}`; JSON camelCase, enums as strings, nulls omitted.
-- Lists: `?page=1&pageSize=25&sort=lastName:asc&search=…` → `{ items, page, pageSize, totalCount }`.
+- Routes `/api/{module}/{resource}`; ID segments use the `{id:guid}` constraint, so a malformed ID is a 404 like any unknown one. Actions bind `Guid` and convert with `PersonId.From(id)`.
+- JSON camelCase, enums as camelCase strings, nulls omitted. One shared method configures both MVC's `JsonOptions` and `ConfigureHttpJsonOptions` (the OpenAPI generator reads the latter).
+- Lists: `?page=1&pageSize=25&sort=lastName:asc&search=…` → `{ items, page, pageSize, totalCount }`. `PageRequest` / `PagedList<T>` live in BuildingBlocks.Contracts so module Contracts can use them. Defaults page 1, pageSize 25; the `PageRequest` constructor clamps page to ≥ 1 and pageSize to 1–100. `sort` and `search` are raw strings until the first real list endpoint designs the sort grammar, the per-endpoint allow-list and the EF paging extension.
+- Controllers derive from an abstract `ApiController : ControllerBase` (`[ApiController]`), return `ActionResult<TDto>` and branch explicitly: `result.IsFailure ? Problem(result.Error) : Ok(result.Value)`. `[ProducesResponseType<ProblemDetails>(…)]` only where an action can return it.
 - Errors: RFC 9457 ProblemDetails with `code`, `traceId`, and `errors: { field: [codes] }` for validation.
+  - `ErrorType` → status in one `switch`: Validation 400, NotFound 404, Conflict 409, Forbidden 403, Unauthorized 401, Failure 500 (a unit test covers every enum value). `detail` = `Error.Detail`.
+  - `code` is present when there is one: on responses built from an `Error`, and `common.unexpected` on the 500. Framework-produced responses (unknown route, disabled module, automatic 400) carry none; the frontend falls back to the status.
+  - `traceId` is the bare 32-hex W3C trace ID, the same value as the `X-Trace-Id` response header.
+  - Unhandled exceptions → `UseExceptionHandler` → 500 with no exception message or stack trace in any environment; logged once.
+  - `UseStatusCodePages` gives every bodyless 4xx/5xx a ProblemDetails body.
+  - Known gap: `[ApiController]`'s automatic 400 (e.g. `?page=abc`) returns English messages, not codes. Replaced with the validation decorator.
 - No versioning until needed.
-- Built-in `Microsoft.AspNetCore.OpenApi` document; Swagger UI (Swashbuckle `SwaggerUI`) in Development only; `.http` files per module are the versioned way to exercise endpoints.
+- Built-in `Microsoft.AspNetCore.OpenApi` document at `/openapi/v1.json` and Swagger UI (Swashbuckle `SwaggerUI`) at `/swagger`, both in Development only; `.http` files per module are the versioned way to exercise endpoints.
 
 ## Module system
 
@@ -147,12 +159,15 @@ public interface IModule
     bool IsCore { get; }
     IReadOnlyList<string> DependsOn { get; }
     void Register(IServiceCollection services, IConfiguration config);
-    IEnumerable<Permission> Permissions { get; }
+    // IEnumerable<Permission> Permissions { get; }   added with Identity, when permissions are first catalogued
 }
 ```
 
-- Registered explicitly in `Program.cs`; controllers via `AddApplicationPart`.
-- Controllers carry `[Module("key")]`; a filter returns **404** when the module is disabled (in-memory activation cache, refreshed on toggle).
+- `IModule` lives in BuildingBlocks.Infrastructure. Modules are registered explicitly in `Program.cs` via `builder.AddModules(...)`, which calls `services.AddModule(module, config)` for each. `AddModule` calls `Register`, adds the module as an `IModule` singleton and adds the module's assembly (`module.GetType().Assembly`) as an MVC application part. The integration-test harness registers test-only modules through the same `AddModule`.
+- `AddModule` throws at startup on a duplicate `Key` or a second module claiming the same assembly.
+- A controller belongs to the module whose assembly contains it; there is no `[Module]` attribute, so a controller can't be left ungated or carry a mistyped key. Controllers in Host projects belong to no module and are never gated.
+- `IModuleActivation { bool IsEnabled(string moduleKey); }` is synchronous (in-memory activation cache, refreshed on toggle) and the single authority: Platform's implementation returns `true` for core modules. Until Platform exists, `AllModulesEnabled` is registered with `TryAdd`.
+- The **module gate** is middleware (`app.UseModuleGate()`) after routing and **before authentication and authorization**, so a disabled module answers 404 before any 401/403 could reveal it exists. It reads the endpoint's `ControllerActionDescriptor`, maps the controller's assembly to its module, and sets a bodyless 404; `UseStatusCodePages` makes that response identical to an unknown route's.
 - Disabled modules keep their data, keep consuming integration events, and their permissions are hidden (not removed) in the role editor.
 - Enabling checks `DependsOn`; disabling a module others depend on → 409 `platform.module.required_by`.
 - `GET /api/platform/modules` → `[{ key, enabled, isCore, dependsOn }]` drives frontend navigation and route guards.
@@ -191,7 +206,7 @@ public interface IModule
 - ASP.NET Core Identity (EF stores, `identity` schema); user type in Infrastructure. A User holds Email (= username, unique, case-insensitive), `DisplayName`, `PreferredLocale`. All other personal data belongs to the Person in Membership.
 - **Accounts**: Invitations by staff; Self-registration configurable, **off by default**. Self-registered Users must confirm their email before signing in. `UserRegistered` carries sign-up names for Membership.
 - **Roles**: built-in Administrator (all permissions, immutable, ≥1 active) and **Basic**, the built-in default Role every new User receives (self-service permissions only); custom Roles; union of permissions.
-- **Permissions**: `{module}.{resource}.{action}`, constants in each module's Contracts, exposed via `IModule.Permissions`, catalogued by Identity at startup; `[HasPermission(...)]` via a dynamic policy provider; resolved per request through cached `IPermissionProvider` keyed by user + `perm_version`.
+- **Permissions**: `{module}.{resource}.{action}`, constants in each module's Contracts, exposed via `IModule.Permissions` (added to `IModule` with Identity), catalogued by Identity at startup; `[HasPermission(...)]` via a dynamic policy provider; resolved per request through cached `IPermissionProvider` keyed by user + `perm_version`.
 - **Passwords**: NIST 800-63B — 12–128 chars, no composition rules; lockout 5 attempts / 15 min; built-in rate limiter on login, refresh, setup; optional pluggable breached-password check (off by default).
 - **Tokens**: ES256 JWT, 10 min, `kid` + JWKS (current + previous key); refresh 14 days sliding, 90-day absolute cap per family, rotation with reuse detection and 10 s grace window; refresh cookie scoped to `/api/identity/refresh`.
 - **Keys**: JWT signing keys and Data Protection key ring generated on first start in `/data/keys` (or supplied via config).
@@ -248,7 +263,7 @@ web/src/
 
 **Milestone 1 — Core platform** (in order):
 1. Solution skeleton, Aspire AppHost/ServiceDefaults, MigrationService, BuildingBlocks (SharedKernel, decorators, outbox/inbox, interceptors), architecture tests, integration-test harness
-2. Platform module: Organization, ModuleActivation, module filter, Setup
+2. Platform module: Organization, ModuleActivation, Setup
 3. Identity: password sign-in, JWT + refresh rotation, Sessions, Roles & Permissions, Invitations, Self-registration
 4. Communication core: SMTP/MailKit, Fluid templates, consumers for Identity events
 5. Frontend shell: i18n, auth client, Setup wizard, sign-in, invitation/reset pages, org settings & modules admin, own security page
