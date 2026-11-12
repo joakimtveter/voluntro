@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Voluntro.Api.IntegrationTests.Sample;
 using Voluntro.SharedKernel;
@@ -111,6 +112,54 @@ public sealed partial class ProblemDetailsTests(VoluntroApiFactory factory) : IC
 
         using var body = JsonDocument.Parse(raw);
         Assert.Equal("common.unexpected", body.RootElement.GetProperty("code").GetString());
+        Assert.Matches(BareTraceId(), body.RootElement.GetProperty("traceId").GetString());
+    }
+
+    [Theory]
+    [InlineData("text/html")]
+    [InlineData("text/plain")]
+    [InlineData("application/xml")]
+    public async Task A_framework_produced_error_is_problem_details_whatever_the_client_accepts(string accept)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var client = factory.CreateClient();
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/does-not-exist");
+        request.Headers.Accept.ParseAdd(accept);
+        using var response = await client.SendAsync(request, ct);
+        using var withoutAccept = await client.GetAsync("/api/does-not-exist", ct);
+
+        // The API has one error format. A client that doesn't ask for JSON still gets it, not a text/plain line.
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(ProblemJson, response.Content.Headers.ContentType?.MediaType);
+
+        var body = JsonNode.Parse(await response.Content.ReadAsStringAsync(ct))!.AsObject();
+        var traceId = (string?)body["traceId"];
+        Assert.Matches(BareTraceId(), traceId);
+        Assert.Equal(traceId, Assert.Single(response.Headers.GetValues("X-Trace-Id")));
+
+        // Apart from the trace ID, the body is the one every other client gets.
+        var expected = JsonNode.Parse(await withoutAccept.Content.ReadAsStringAsync(ct))!.AsObject();
+        body.Remove("traceId");
+        expected.Remove("traceId");
+        Assert.Equal(expected.ToJsonString(), body.ToJsonString());
+    }
+
+    [Fact]
+    public async Task A_405_from_routing_is_problem_details_whatever_the_client_accepts()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var client = factory.CreateClient();
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/sample/items");
+        request.Headers.Accept.ParseAdd("text/html");
+        using var response = await client.SendAsync(request, ct);
+
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
+        Assert.Equal(ProblemJson, response.Content.Headers.ContentType?.MediaType);
+
+        using var body = await ReadJsonAsync(response, ct);
+        Assert.Equal(405, body.RootElement.GetProperty("status").GetInt32());
         Assert.Matches(BareTraceId(), body.RootElement.GetProperty("traceId").GetString());
     }
 

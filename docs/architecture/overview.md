@@ -146,6 +146,7 @@ Allowed Voluntro references for module X (Y = any other module; ✅ allowed, ❌
   - `traceId` is the bare 32-hex W3C trace ID, the same value as the `X-Trace-Id` response header.
   - Unhandled exceptions → `UseExceptionHandler` → 500 with no exception message or stack trace in any environment; logged once.
   - `UseStatusCodePages` gives every bodyless 4xx/5xx a ProblemDetails body.
+  - Errors are not content-negotiated: the body is `application/problem+json` whatever the `Accept` header. The framework's default writer refuses a request that doesn't accept JSON (status-code pages then answer `text/plain`); `AnyAcceptProblemDetailsWriter`, registered last by `AddApiProblemDetails()`, writes it instead.
   - Known gap: `[ApiController]`'s automatic 400 (e.g. `?page=abc`) returns English messages, not codes. Replaced with the validation decorator.
 - No versioning until needed.
 - Built-in `Microsoft.AspNetCore.OpenApi` document at `/openapi/v1.json` and Swagger UI (Swashbuckle `SwaggerUI`) at `/swagger`, both in Development only; `.http` files per module are the versioned way to exercise endpoints.
