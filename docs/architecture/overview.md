@@ -73,6 +73,7 @@ voluntro/
 │  ├─ Voluntro.ArchitectureTests/                hand-written reflection tests (see Architecture tests below)
 │  ├─ Voluntro.Api.IntegrationTests/             WebApplicationFactory harness + test-only sample module (module system, errors, conventions)
 │  ├─ BuildingBlocks/Voluntro.SharedKernel.Tests/ unit tests for the primitives (plain xUnit Assert)
+│  ├─ BuildingBlocks/Voluntro.BuildingBlocks.Infrastructure.Tests/ convention tests on small contexts of their own (kept out of the project `dotnet ef` runs against; no database)
 │  └─ Modules/<Module>/ *.Domain.Tests, *.Application.Tests, *.IntegrationTests
 ├─ web/                                          TanStack Start app
 └─ deploy/   Dockerfiles (api, web, migrations), docker-compose.yml, Caddyfile
@@ -214,7 +215,7 @@ public interface IModule
 
 - **IDs**: a generic `EntityIdConverter<TId> : ValueConverter<TId, Guid>` is registered for every `IEntityId<>` type in the assemblies of the context's `DbSet<>` entity types, i.e. the module's Domain. Cross-module references are `Guid`s, so a context never needs another module's ID types. An expression tree can't call a static abstract member (CS8927), so the converter reaches `TId.From` through a plain static helper method.
 - **Keys**: primary keys of an `IEntityId` type, on aggregates and child entities alike, are `ValueGeneratedNever`. Otherwise a new child added to a loaded aggregate is taken for an existing row and saved as an `UPDATE`, which fails with a concurrency exception. EF Core 10 already leaves keys with a value converter ungenerated, so the convention guards against that default changing; the persistence tests cover the behaviour.
-- **Aggregates**: on every entity type deriving from `AggregateRoot<>` (checked through its base types), `Version` is the row version on `xmin` and `DomainEvents` is ignored.
+- **Aggregates**: on every entity type deriving from `AggregateRoot<>` (checked through its base types), `Version` is the row version on `xmin` and `DomainEvents` is ignored. The `Version` mapping is all or nothing: a module that configures `Version` itself owns the whole mapping, and the convention adds nothing to it.
 - **Enums**: stored as text, using the C# member names (`Published`). The database isn't the API, so no camelCase converter.
 - Child entities with their own identity are ordinary entity types (`HasMany` over a private field exposed as `IReadOnlyList`, cascade delete), not owned types. How value objects are mapped is decided with Platform.
 

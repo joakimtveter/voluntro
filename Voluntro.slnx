@@ -18,6 +18,7 @@
     <Project Path="tests/Voluntro.ArchitectureTests/Voluntro.ArchitectureTests.csproj" />
   </Folder>
   <Folder Name="/tests/BuildingBlocks/">
+    <Project Path="tests/BuildingBlocks/Voluntro.BuildingBlocks.Infrastructure.Tests/Voluntro.BuildingBlocks.Infrastructure.Tests.csproj" />
     <Project Path="tests/BuildingBlocks/Voluntro.SharedKernel.Tests/Voluntro.SharedKernel.Tests.csproj" />
   </Folder>
 </Solution>
