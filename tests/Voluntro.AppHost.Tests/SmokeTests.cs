@@ -1,33 +1,37 @@
 using System.Net;
-using Aspire.Hosting;
+using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 
 namespace Voluntro.AppHost.Tests;
 
-/// <summary>
-/// Starts the whole AppHost (Postgres container and API) and checks the API is ready.
-/// Needs Docker or Podman running.
-/// </summary>
-public sealed class SmokeTests
+public sealed class SmokeTests(RunningAppHost appHost) : IClassFixture<RunningAppHost>
 {
-    // Covers pulling the Postgres image on a cold machine.
-    private static readonly TimeSpan StartupTimeout = TimeSpan.FromMinutes(3);
-
     [Fact]
     public async Task Api_is_ready_when_the_AppHost_starts()
     {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        timeout.CancelAfter(StartupTimeout);
+        var ct = TestContext.Current.CancellationToken;
+        using var client = appHost.App.CreateHttpClient("api");
 
-        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Voluntro_AppHost>(timeout.Token);
-        await using var app = await appHost.BuildAsync(timeout.Token);
-        await app.StartAsync(timeout.Token);
-
-        await app.ResourceNotifications.WaitForResourceHealthyAsync("api", timeout.Token);
-
-        using var client = app.CreateHttpClient("api");
-        using var response = await client.GetAsync(new Uri("/health/ready", UriKind.Relative), timeout.Token);
+        using var response = await client.GetAsync(new Uri("/health/ready", UriKind.Relative), ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Migrations_finish_successfully_before_the_api_starts()
+    {
+        var notifications = appHost.App.ResourceNotifications;
+        var migrations = await notifications.WaitForResourceAsync(
+            "migrations",
+            resource => resource.Snapshot.ExitCode is not null,
+            TestContext.Current.CancellationToken);
+        Assert.True(notifications.TryGetCurrentState("api", out var api));
+
+        Assert.Equal(0, migrations.Snapshot.ExitCode);
+
+        // Not just "WaitForCompletion is wired up": the API process really started after the migrations exited.
+        var migrationsStopped = Assert.NotNull(migrations.Snapshot.StopTimeStamp);
+        var apiStarted = Assert.NotNull(api.Snapshot.StartTimeStamp);
+        Assert.True(apiStarted >= migrationsStopped, $"api started at {apiStarted:O}, migrations stopped at {migrationsStopped:O}.");
     }
 }

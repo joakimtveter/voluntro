@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Voluntro.Api\Voluntro.Api.csproj" />
+    <ProjectReference Include="..\Voluntro.MigrationService\Voluntro.MigrationService.csproj" />
   </ItemGroup>
 
   <ItemGroup>
