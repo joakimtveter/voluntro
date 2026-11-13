@@ -3,10 +3,12 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Npgsql" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Voluntro.ServiceDefaults\Voluntro.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Voluntro.BuildingBlocks.Infrastructure\Voluntro.BuildingBlocks.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

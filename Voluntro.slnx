@@ -2,6 +2,7 @@
   <Folder Name="/src/" />
   <Folder Name="/src/BuildingBlocks/">
     <Project Path="src/BuildingBlocks/Voluntro.BuildingBlocks.Application/Voluntro.BuildingBlocks.Application.csproj" />
+    <Project Path="src/BuildingBlocks/Voluntro.BuildingBlocks.Contracts/Voluntro.BuildingBlocks.Contracts.csproj" />
     <Project Path="src/BuildingBlocks/Voluntro.BuildingBlocks.Infrastructure/Voluntro.BuildingBlocks.Infrastructure.csproj" />
     <Project Path="src/BuildingBlocks/Voluntro.SharedKernel/Voluntro.SharedKernel.csproj" />
   </Folder>
@@ -11,6 +12,7 @@
     <Project Path="src/Host/Voluntro.ServiceDefaults/Voluntro.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Voluntro.Api.IntegrationTests/Voluntro.Api.IntegrationTests.csproj" />
     <Project Path="tests/Voluntro.AppHost.Tests/Voluntro.AppHost.Tests.csproj" />
     <Project Path="tests/Voluntro.ArchitectureTests/Voluntro.ArchitectureTests.csproj" />
   </Folder>

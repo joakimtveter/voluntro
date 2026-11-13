@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Every module's Contracts depends on this project, so it holds only plain types: no packages
+       (enforced by the architecture tests) and at most a reference to SharedKernel, added when first needed. -->
+
+</Project>

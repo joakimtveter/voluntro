@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Options;
 using Voluntro.Api.Options;
+using Voluntro.BuildingBlocks.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +17,20 @@ builder.Services.AddSingleton<IValidateOptions<AppOptions>, AppOptionsValidator>
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+// camelCase, enums as camelCase strings, nulls omitted: for controllers, ProblemDetails and the OpenAPI document.
+builder.Services.AddApiJsonConventions();
+
+// Route and query values: query parameters are documented in camelCase too (?pageSize=25), so the OpenAPI
+// document matches, and enums bind from their names only, never from integers.
+builder.Services.AddApiParameterConventions();
+
+// Every error response is an RFC 9457 ProblemDetails with the request's traceId.
+builder.Services.AddApiProblemDetails();
+
+// Every module is listed here explicitly. Platform, Identity, ... are added as they are built.
+builder.AddModules();
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -24,12 +38,18 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
+// First, so it catches exceptions from everything after it: an unhandled exception is a bug and becomes
+// a generic 500 ProblemDetails (code common.unexpected) in every environment; the exception is logged.
+app.UseExceptionHandler();
+
+// Gives every bodyless error response (unknown route, disabled module) a ProblemDetails body.
+app.UseStatusCodePages();
+
 // Return the request's trace ID with every response, so an error report can be found in the dashboard.
 // OnStarting runs just before the headers are sent, so the header survives an exception handler clearing the response.
 app.Use(async (context, next) =>
 {
-    var traceId = context.Features.Get<IHttpActivityFeature>()?.Activity.TraceId.ToString()
-        ?? context.TraceIdentifier;
+    var traceId = context.GetTraceId();
 
     context.Response.OnStarting(() =>
     {
@@ -40,12 +60,21 @@ app.Use(async (context, next) =>
     await next(context);
 });
 
+// Developer tooling, Development only: the built-in OpenAPI document (/openapi/v1.json, also the source of the
+// frontend's generated types) and Swagger UI (/swagger) to browse it. Swashbuckle provides only the UI.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "Voluntro API"));
 }
 
-app.UseHttpsRedirection();
+// No UseHttpsRedirection: Caddy terminates TLS (redirects, HSTS) and talks plain HTTP to the API.
+
+app.UseRouting();
+
+// After routing (it needs the matched endpoint), before auth: a disabled module answers 404
+// before a 401/403 could reveal that it exists.
+app.UseModuleGate();
 
 app.UseAuthorization();
 
