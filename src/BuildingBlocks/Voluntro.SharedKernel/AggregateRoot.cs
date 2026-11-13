@@ -22,6 +22,13 @@ public abstract class AggregateRoot<TId> : Entity<TId>, IHasDomainEvents
     }
 
     /// <summary>
+    /// The aggregate's concurrency version (ADR-0011). Only the database assigns it, on every save
+    /// (Postgres <c>xmin</c>); it is 0 until the aggregate is first saved. Compare versions for equality
+    /// only: the value wraps around, so a larger one is not necessarily newer.
+    /// </summary>
+    public uint Version { get; private set; }
+
+    /// <summary>
     /// A live, read-only view of the events raised since the last clear.
     /// Copy it before clearing if you need the events afterwards.
     /// </summary>
