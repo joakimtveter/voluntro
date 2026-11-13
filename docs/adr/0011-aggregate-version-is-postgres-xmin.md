@@ -12,4 +12,5 @@ Every aggregate is protected against concurrent edits by optimistic concurrency 
 - `version` appears in DTOs and update requests. A stale version is a 409 `common.concurrency_conflict`.
 - `Version` is 0 on a new aggregate until it is saved; EF reads `xmin` back after every insert and update.
 - The generated migration lists `xmin` (`type: "xid", rowVersion: true`), but Npgsql's SQL generator skips system columns, so no column is created. A column named `version` in a migration means the convention is broken.
-- Only the root's row carries the version. A change that writes only child entities leaves `Version` unchanged, so concurrent edits of children go undetected unless such changes also write the root's row (open; decided with the command pipeline).
+- Only the root's row carries the version. A change that writes only child entities would leave `Version` unchanged, so the audit interceptor stamps the root's `ModifiedAt/By` whenever a child is added, modified or deleted. That writes the root's row with its `xmin` check (see the overview, Auditing and Concurrency).
+- Update handlers compare the loaded `Version` with the request's (`EnsureVersion`), and the `xmin` check at save time catches an edit that lands between the load and the commit. Application never sets `OriginalValue`.
