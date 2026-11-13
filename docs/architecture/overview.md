@@ -324,6 +324,8 @@ web/src/
 - One shared module list for the Api and the MigrationService (decide with Platform). Today each host calls `AddModules(...)` itself, and a module missing from the MigrationService's list never gets its tables.
 - Least-privilege database users: the migrator owns the schemas, the API only reads and writes rows (M1.7)
 - A pending-migrations check in the API, at startup or as a readiness check (M1.7)
+- A database of its own for the AppHost smoke test. Today it starts Postgres on the AppHost's persistent volume (`WithDataVolume()`), which a dev run likely shares. Once a module has migrations, a test run on a feature branch migrates that database, and switching back leaves it ahead of the model (decide before Platform's first migration)
+- The `Location` header of a 201 behind Caddy. `CreatedAtAction` builds an absolute URL from the request's scheme and host, and the API sees plain HTTP, so it would answer `Location: http://…`. Forwarded headers, or a relative `Location` (M1.7)
 - EF retry-on-failure, and how it combines with the `TransactionDecorator` (#7)
 - How a change that writes only an aggregate's child entities also changes the root's `Version` (#7, see ADR-0011)
 - Mapping value objects: EF complex types vs owned types (Platform, with the `Organization` address)
