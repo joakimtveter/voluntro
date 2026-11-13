@@ -29,6 +29,18 @@ public abstract class ApiController : ControllerBase
         return new ObjectResult(problem) { StatusCode = statusCode };
     }
 
+    /// <summary>
+    /// <c>201 Created</c> for a new resource: <c>Location</c> points at <paramref name="actionName"/>, the controller's
+    /// get-by-ID action (its route parameter must be named <c>id</c>), and the body is <c>{ id }</c>.
+    /// Declare <c>[ProducesResponseType&lt;CreatedResponse&gt;(StatusCodes.Status201Created)]</c> on the action.
+    /// </summary>
+    /// <remarks>
+    /// Not the full resource: the transaction decorator saves after the handler returns, so the handler can't know
+    /// the new <c>version</c>, and returning the resource would take a second read.
+    /// </remarks>
+    protected CreatedAtActionResult CreatedAt(string actionName, Guid id) =>
+        CreatedAtAction(actionName, new { id }, new CreatedResponse(id));
+
     private static int ToStatusCode(ErrorType type) => type switch
     {
         ErrorType.Validation => StatusCodes.Status400BadRequest,

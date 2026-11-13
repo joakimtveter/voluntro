@@ -11,6 +11,14 @@ public sealed class AggregateRootTests
     }
 
     [Fact]
+    public void A_new_aggregate_has_version_zero_until_the_database_assigns_one()
+    {
+        var aggregate = new TestAggregate(TestId.New());
+
+        Assert.Equal(0u, aggregate.Version);
+    }
+
+    [Fact]
     public void Raised_events_are_exposed_in_the_order_they_were_raised()
     {
         var aggregate = new TestAggregate(TestId.New());

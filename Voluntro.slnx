@@ -9,6 +9,7 @@
   <Folder Name="/src/Host/">
     <Project Path="src/Host/Voluntro.Api/Voluntro.Api.csproj" />
     <Project Path="src/Host/Voluntro.AppHost/Voluntro.AppHost.csproj" />
+    <Project Path="src/Host/Voluntro.MigrationService/Voluntro.MigrationService.csproj" />
     <Project Path="src/Host/Voluntro.ServiceDefaults/Voluntro.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/tests/">
@@ -17,6 +18,7 @@
     <Project Path="tests/Voluntro.ArchitectureTests/Voluntro.ArchitectureTests.csproj" />
   </Folder>
   <Folder Name="/tests/BuildingBlocks/">
+    <Project Path="tests/BuildingBlocks/Voluntro.BuildingBlocks.Infrastructure.Tests/Voluntro.BuildingBlocks.Infrastructure.Tests.csproj" />
     <Project Path="tests/BuildingBlocks/Voluntro.SharedKernel.Tests/Voluntro.SharedKernel.Tests.csproj" />
   </Folder>
 </Solution>
