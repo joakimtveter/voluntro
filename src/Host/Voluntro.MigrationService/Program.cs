@@ -27,6 +27,13 @@ try
     await host.Services.MigrateModulesAsync(stopping);
     return 0;
 }
+catch (OperationCanceledException) when (stopping.IsCancellationRequested)
+{
+    // Stopped on request (Ctrl+C, SIGTERM), which is not a failed migration. Still not 0: the migrations didn't
+    // finish, so nothing waiting for them may go on.
+    Log.MigrationsCancelled(logger);
+    return 1;
+}
 catch (Exception exception)
 {
     Log.MigrationsFailed(logger, exception);
