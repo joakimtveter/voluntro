@@ -9,6 +9,9 @@ public sealed class SmokeTests(RunningAppHost appHost) : IClassFixture<RunningAp
     [Fact]
     public async Task Api_is_ready_when_the_AppHost_starts()
     {
+        // A request to an API that never started would only wait out HttpClient's timeout.
+        Assert.True(appHost.ApiIsHealthy, "The API never started, because the migrations failed.");
+
         var ct = TestContext.Current.CancellationToken;
         using var client = appHost.App.CreateHttpClient("api");
 
