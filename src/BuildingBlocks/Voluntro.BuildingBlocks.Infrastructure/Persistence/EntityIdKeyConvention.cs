@@ -9,6 +9,10 @@ namespace Voluntro.BuildingBlocks.Infrastructure.Persistence;
 /// If EF took such a key for a generated one, a new child added to a loaded aggregate would look like an existing
 /// row (its key is already set) and be saved as an <c>UPDATE</c>, which fails with a concurrency exception.
 /// </summary>
+/// <remarks>
+/// EF Core 10 already leaves keys with a value converter ungenerated, so today this states the rule rather than
+/// changing the model; it keeps the rule if EF's default changes. The persistence tests cover the behaviour itself.
+/// </remarks>
 internal sealed class EntityIdKeyConvention : IModelFinalizingConvention
 {
     public void ProcessModelFinalizing(
