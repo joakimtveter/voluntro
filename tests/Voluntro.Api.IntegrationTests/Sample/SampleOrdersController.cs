@@ -9,6 +9,8 @@ namespace Voluntro.Api.IntegrationTests.Sample;
 [Route("api/sample/orders")]
 public sealed class SampleOrdersController(
     ICommandHandler<CreateSampleOrder, SampleOrderId> createOrder,
+    ICommandHandler<UpdateSampleOrder> updateOrder,
+    ICommandHandler<AddSampleOrderLine, SampleOrderLineId> addLine,
     ICommandHandler<PlaceSampleOrder> placeOrder,
     IQueryHandler<GetSampleOrder, SampleOrderDto> getOrder) : ApiController
 {
@@ -21,6 +23,44 @@ public sealed class SampleOrdersController(
         var result = await createOrder.HandleAsync(command, cancellationToken);
 
         return result.IsFailure ? Problem(result.Error) : CreatedAt(nameof(Get), result.Value.Value);
+    }
+
+    /// <summary>
+    /// <c>PUT /api/sample/orders/{id}</c> with <c>{ customerName, note, version }</c>: 204, or 409
+    /// <c>common.concurrency_conflict</c> when the order changed since the client read <c>version</c>.
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    public async Task<ActionResult> Update(Guid id, UpdateSampleOrderRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var command = new UpdateSampleOrder(SampleOrderId.From(id), request.CustomerName, request.Note, request.Version);
+        var result = await updateOrder.HandleAsync(command, cancellationToken);
+
+        return result.IsFailure ? Problem(result.Error) : NoContent();
+    }
+
+    /// <summary>
+    /// <c>POST /api/sample/orders/{id}/lines</c> with <c>{ productName, quantity, version }</c>: 201 with the new
+    /// line's <c>{ id }</c>. A line has no address of its own, so <c>Location</c> is its order.
+    /// </summary>
+    [HttpPost("{id:guid}/lines")]
+    [ProducesResponseType<CreatedResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    public async Task<ActionResult<CreatedResponse>> AddLine(Guid id, AddSampleOrderLineRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var command = new AddSampleOrderLine(SampleOrderId.From(id), request.ProductName, request.Quantity, request.Version);
+        var result = await addLine.HandleAsync(command, cancellationToken);
+
+        return result.IsFailure ? Problem(result.Error) : CreatedAt(nameof(Get), new { id }, result.Value.Value);
     }
 
     /// <summary><c>POST /api/sample/orders/{id}/place</c>: 204, or 409 <c>sample.order.empty</c> for an order without lines.</summary>

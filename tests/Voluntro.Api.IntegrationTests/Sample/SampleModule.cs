@@ -35,6 +35,8 @@ public sealed class SampleModule : IModule
 
         services.AddCommandHandlers<SampleDbContext>()
             .AddValidated<CreateSampleOrder, SampleOrderId, CreateSampleOrderHandler, CreateSampleOrderValidator>()
+            .AddValidated<UpdateSampleOrder, UpdateSampleOrderHandler, UpdateSampleOrderValidator>()
+            .AddValidated<AddSampleOrderLine, SampleOrderLineId, AddSampleOrderLineHandler, AddSampleOrderLineValidator>()
             .Add<PlaceSampleOrder, PlaceSampleOrderHandler>();
     }
 }

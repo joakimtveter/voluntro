@@ -34,4 +34,12 @@ public abstract class ApiController : ControllerBase
     /// </remarks>
     protected CreatedAtActionResult CreatedAt(string actionName, Guid id) =>
         CreatedAtAction(actionName, new { id }, new CreatedResponse(id));
+
+    /// <summary>
+    /// <c>201 Created</c> for a child resource that has no get action of its own (an order line): <c>Location</c>
+    /// points at its aggregate, <paramref name="actionName"/> with <paramref name="routeValues"/>, and the body is
+    /// the new child's <c>{ id }</c>.
+    /// </summary>
+    protected CreatedAtActionResult CreatedAt(string actionName, object routeValues, Guid id) =>
+        CreatedAtAction(actionName, routeValues, new CreatedResponse(id));
 }
