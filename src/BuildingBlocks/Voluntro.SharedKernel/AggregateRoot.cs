@@ -28,6 +28,22 @@ public abstract class AggregateRoot<TId> : Entity<TId>, IHasDomainEvents
     /// </summary>
     public uint Version { get; private set; }
 
+    /// <summary>When the aggregate was first saved (UTC). Assigned on save, never by domain code.</summary>
+    public DateTimeOffset CreatedAt { get; private set; }
+
+    /// <summary>The user who first saved it, or the well-known System user for background work.</summary>
+    public Guid CreatedBy { get; private set; }
+
+    /// <summary>
+    /// When the aggregate, or any of its child entities, last changed (UTC); equal to <see cref="CreatedAt"/> until
+    /// then. A change to a child stamps the root too, so the root's row is written and its <see cref="Version"/>
+    /// changes (ADR-0011).
+    /// </summary>
+    public DateTimeOffset ModifiedAt { get; private set; }
+
+    /// <summary>The user behind the last change; equal to <see cref="CreatedBy"/> until then.</summary>
+    public Guid ModifiedBy { get; private set; }
+
     /// <summary>
     /// A live, read-only view of the events raised since the last clear.
     /// Copy it before clearing if you need the events afterwards.

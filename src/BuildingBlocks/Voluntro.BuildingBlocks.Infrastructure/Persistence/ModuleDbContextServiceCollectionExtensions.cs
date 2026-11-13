@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
+using Voluntro.BuildingBlocks.Application;
 
 namespace Voluntro.BuildingBlocks.Infrastructure.Persistence;
 
@@ -23,10 +25,18 @@ public static class ModuleDbContextServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddDbContext<TContext>((provider, options) =>
-            options.UseNpgsql(
+        // What the audit interceptor needs. Identity replaces the System user with the signed-in one.
+        services.TryAddScoped<ICurrentUser, SystemCurrentUser>();
+        services.TryAddSingleton(TimeProvider.System);
+
+        // The provider is the scope the context is created in, so the interceptor gets that request's user.
+        services.AddDbContext<TContext>((provider, options) => options
+            .UseNpgsql(
                 provider.GetRequiredService<NpgsqlDataSource>(),
-                npgsql => npgsql.EnableRetryOnFailure()));
+                npgsql => npgsql.EnableRetryOnFailure())
+            .AddInterceptors(new AuditInterceptor(
+                provider.GetRequiredService<ICurrentUser>(),
+                provider.GetRequiredService<TimeProvider>())));
 
         services.AddSingleton(new ModuleDbContextRegistration(typeof(TContext)));
 
