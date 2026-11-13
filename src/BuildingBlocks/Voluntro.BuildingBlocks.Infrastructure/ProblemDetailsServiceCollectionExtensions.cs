@@ -31,6 +31,16 @@ public static class ProblemDetailsServiceCollectionExtensions
             }
         });
 
+        // [ApiController]'s automatic 400 for a request that doesn't bind answers in the validator's shape:
+        // code common.validation_failed and errors: { field: [codes] }, never MVC's English messages.
+        services.Configure<ApiBehaviorOptions>(options =>
+            options.InvalidModelStateResponseFactory = ErrorProblemDetails.FromModelState);
+
+        // Request shape is the validators' job. MVC would otherwise treat every non-nullable reference property as
+        // [Required] and answer a missing customerName with invalid_value before the validator could say required.
+        services.Configure<MvcOptions>(options =>
+            options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
+
         // Writers are asked in registration order and the first that can write wins, so this one must come last:
         // after MVC's (controller endpoints) and the framework's default (clients that accept JSON).
         services.AddSingleton<IProblemDetailsWriter, AnyAcceptProblemDetailsWriter>();
