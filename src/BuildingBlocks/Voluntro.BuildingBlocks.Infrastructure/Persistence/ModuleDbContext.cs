@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Voluntro.BuildingBlocks.Application;
 using Voluntro.SharedKernel;
 
 namespace Voluntro.BuildingBlocks.Infrastructure.Persistence;
@@ -14,10 +15,27 @@ namespace Voluntro.BuildingBlocks.Infrastructure.Persistence;
 /// <remarks>
 /// Register a context with <see cref="ModuleDbContextServiceCollectionExtensions.AddModuleDbContext{TContext}"/>,
 /// which only supplies the connection. Migrations are applied by <see cref="ModuleMigrations.MigrateModulesAsync"/>,
-/// never by the API.
+/// never by the API. The context is also the module's <see cref="IUnitOfWork"/>: the transaction decorator saves
+/// or discards a command's changes through it.
 /// </remarks>
-public abstract class ModuleDbContext(DbContextOptions options) : DbContext(options)
+public abstract class ModuleDbContext(DbContextOptions options) : DbContext(options), IUnitOfWork
 {
+    async Task<Result> IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await SaveChangesAsync(cancellationToken);
+            return Result.Success();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // A row's xmin no longer matched: someone else saved the aggregate after it was loaded (ADR-0011).
+            return CommonErrors.ConcurrencyConflict;
+        }
+    }
+
+    void IUnitOfWork.DiscardChanges() => ChangeTracker.Clear();
+
     /// <summary>
     /// The module's schema: the same constant its <see cref="IModule.Key"/> returns, e.g. <c>"sample"</c>.
     /// Fixed per context type, because EF builds and caches one model per type.

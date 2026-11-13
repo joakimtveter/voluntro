@@ -9,6 +9,7 @@ namespace Voluntro.Api.IntegrationTests.Sample;
 [Route("api/sample/orders")]
 public sealed class SampleOrdersController(
     ICommandHandler<CreateSampleOrder, SampleOrderId> createOrder,
+    ICommandHandler<PlaceSampleOrder> placeOrder,
     IQueryHandler<GetSampleOrder, SampleOrderDto> getOrder) : ApiController
 {
     /// <summary><c>POST /api/sample/orders</c>: 201 with the new order's address in <c>Location</c> and <c>{ id }</c>.</summary>
@@ -19,6 +20,18 @@ public sealed class SampleOrdersController(
         var result = await createOrder.HandleAsync(command, cancellationToken);
 
         return result.IsFailure ? Problem(result.Error) : CreatedAt(nameof(Get), result.Value.Value);
+    }
+
+    /// <summary><c>POST /api/sample/orders/{id}/place</c>: 204, or 409 <c>sample.order.empty</c> for an order without lines.</summary>
+    [HttpPost("{id:guid}/place")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    public async Task<ActionResult> Place(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await placeOrder.HandleAsync(new PlaceSampleOrder(SampleOrderId.From(id)), cancellationToken);
+
+        return result.IsFailure ? Problem(result.Error) : NoContent();
     }
 
     [HttpGet("{id:guid}")]

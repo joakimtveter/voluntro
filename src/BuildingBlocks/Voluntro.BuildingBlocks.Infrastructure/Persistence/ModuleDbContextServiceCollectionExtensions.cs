@@ -13,9 +13,10 @@ public static class ModuleDbContextServiceCollectionExtensions
     /// <remarks>
     /// Only the connection is chosen here: the <see cref="NpgsqlDataSource"/> the host registers with
     /// <c>AddNpgsqlDataSource("voluntro")</c>. The model is set by <see cref="ModuleDbContext"/> alone.
-    /// There is no retrying execution strategy: it rejects explicit transactions unless the whole unit is wrapped
-    /// in <c>CreateExecutionStrategy().ExecuteAsync</c>, and a retry re-runs the handler. The transaction
-    /// decorator decides that. Never enable sensitive data logging here: it logs parameter values, i.e. personal data.
+    /// Transient failures are retried (ADR-0012). Each command is a single <c>SaveChangesAsync</c> with no explicit
+    /// transaction, so the strategy retries one query or one save at a time and never re-runs a handler. An explicit
+    /// transaction would have to be wrapped in <c>CreateExecutionStrategy().ExecuteAsync</c>.
+    /// Never enable sensitive data logging here: it logs parameter values, i.e. personal data.
     /// </remarks>
     public static IServiceCollection AddModuleDbContext<TContext>(this IServiceCollection services)
         where TContext : ModuleDbContext
@@ -23,7 +24,9 @@ public static class ModuleDbContextServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddDbContext<TContext>((provider, options) =>
-            options.UseNpgsql(provider.GetRequiredService<NpgsqlDataSource>()));
+            options.UseNpgsql(
+                provider.GetRequiredService<NpgsqlDataSource>(),
+                npgsql => npgsql.EnableRetryOnFailure()));
 
         services.AddSingleton(new ModuleDbContextRegistration(typeof(TContext)));
 
