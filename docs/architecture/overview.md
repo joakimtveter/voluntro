@@ -322,8 +322,10 @@ web/src/
 - Which SMS and payment vendors to support first
 - Scope of the full change log for sensitive modules (Membership, Check-in)
 - One shared module list for the Api and the MigrationService (decide with Platform). Today each host calls `AddModules(...)` itself, and a module missing from the MigrationService's list never gets its tables.
+- What the MigrationService registers from a module. Today `AddModules` runs each module's full `Register` and the host is started, so a hosted service a module registers (the outbox processor) would start in the migrator before its tables exist, and its `ValidateOnStart` options would need the API's configuration there. Migrating needs only the DbContexts (decide with the outbox processor)
 - Least-privilege database users: the migrator owns the schemas, the API only reads and writes rows (M1.7)
 - A pending-migrations check in the API, at startup or as a readiness check (M1.7)
+- A command timeout for migrations. `MigrateAsync` runs with Npgsql's default 30 seconds, so a long index build or backfill would fail on every start (M1.7, or the first migration on a table with real data)
 - A database of its own for the AppHost smoke test. Today it starts Postgres on the AppHost's persistent volume (`WithDataVolume()`), which a dev run likely shares. Once a module has migrations, a test run on a feature branch migrates that database, and switching back leaves it ahead of the model (decide before Platform's first migration)
 - The `Location` header of a 201 behind Caddy. `CreatedAtAction` builds an absolute URL from the request's scheme and host, and the API sees plain HTTP, so it would answer `Location: http://…`. Forwarded headers, or a relative `Location` (M1.7)
 - EF retry-on-failure, and how it combines with the `TransactionDecorator` (#7)
