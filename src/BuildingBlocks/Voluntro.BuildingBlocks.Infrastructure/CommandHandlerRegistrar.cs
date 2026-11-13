@@ -24,12 +24,14 @@ public static class CommandHandlerServiceCollectionExtensions
 }
 
 /// <summary>
-/// Registers a module's command handlers, scoped, each wrapped as Transaction → handler, saving through the module's
-/// own <typeparamref name="TContext"/> even when other modules' contexts share the request scope (ADR-0012).
+/// Registers a module's command handlers, scoped, each wrapped as Validation → Transaction → handler, saving through
+/// the module's own <typeparamref name="TContext"/> even when other modules' contexts share the request scope
+/// (ADR-0012). <c>Add</c> leaves validation out; <c>AddValidated</c> puts the command's validator in front.
 /// </summary>
 /// <remarks>
-/// The handler class itself is not registered, only the decorated interface, so nothing can inject a handler
-/// without its decorators.
+/// Neither the handler class nor the validator is registered, only the decorated interface, so nothing can inject
+/// a handler without its decorators. The overloads with a validator are named <c>AddValidated</c> because
+/// <c>Add&lt;TCommand, THandler, TValidator&gt;</c> would clash with <c>Add&lt;TCommand, TResponse, THandler&gt;</c>.
 /// </remarks>
 public sealed class CommandHandlerRegistrar<TContext>
     where TContext : ModuleDbContext
@@ -38,7 +40,7 @@ public sealed class CommandHandlerRegistrar<TContext>
 
     internal CommandHandlerRegistrar(IServiceCollection services) => _services = services;
 
-    /// <summary>Registers a command handler that returns a value on success.</summary>
+    /// <summary>Registers a command handler that returns a value on success, without a validator.</summary>
     /// <exception cref="InvalidOperationException">A handler for <typeparamref name="TCommand"/> is already registered.</exception>
     public CommandHandlerRegistrar<TContext> Add<TCommand, TResponse, THandler>()
         where TResponse : notnull
@@ -54,7 +56,7 @@ public sealed class CommandHandlerRegistrar<TContext>
         return this;
     }
 
-    /// <summary>Registers a command handler that returns nothing on success.</summary>
+    /// <summary>Registers a command handler that returns nothing on success, without a validator.</summary>
     /// <exception cref="InvalidOperationException">A handler for <typeparamref name="TCommand"/> is already registered.</exception>
     public CommandHandlerRegistrar<TContext> Add<TCommand, THandler>()
         where THandler : class, ICommandHandler<TCommand>
@@ -65,6 +67,49 @@ public sealed class CommandHandlerRegistrar<TContext>
             new TransactionDecorator<TCommand>(
                 ActivatorUtilities.CreateInstance<THandler>(provider),
                 provider.GetRequiredService<TContext>()));
+
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a command handler that returns a value on success, validated by <typeparamref name="TValidator"/>
+    /// before anything else runs.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">A handler for <typeparamref name="TCommand"/> is already registered.</exception>
+    public CommandHandlerRegistrar<TContext> AddValidated<TCommand, TResponse, THandler, TValidator>()
+        where TResponse : notnull
+        where THandler : class, ICommandHandler<TCommand, TResponse>
+        where TValidator : class, IValidator<TCommand>
+    {
+        EnsureNotRegistered<ICommandHandler<TCommand, TResponse>>();
+
+        _services.AddScoped<ICommandHandler<TCommand, TResponse>>(provider =>
+            new ValidationDecorator<TCommand, TResponse>(
+                new TransactionDecorator<TCommand, TResponse>(
+                    ActivatorUtilities.CreateInstance<THandler>(provider),
+                    provider.GetRequiredService<TContext>()),
+                ActivatorUtilities.CreateInstance<TValidator>(provider)));
+
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a command handler that returns nothing on success, validated by <typeparamref name="TValidator"/>
+    /// before anything else runs.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">A handler for <typeparamref name="TCommand"/> is already registered.</exception>
+    public CommandHandlerRegistrar<TContext> AddValidated<TCommand, THandler, TValidator>()
+        where THandler : class, ICommandHandler<TCommand>
+        where TValidator : class, IValidator<TCommand>
+    {
+        EnsureNotRegistered<ICommandHandler<TCommand>>();
+
+        _services.AddScoped<ICommandHandler<TCommand>>(provider =>
+            new ValidationDecorator<TCommand>(
+                new TransactionDecorator<TCommand>(
+                    ActivatorUtilities.CreateInstance<THandler>(provider),
+                    provider.GetRequiredService<TContext>()),
+                ActivatorUtilities.CreateInstance<TValidator>(provider)));
 
         return this;
     }

@@ -35,6 +35,46 @@ public sealed class CommandHandlerRegistrarTests
     }
 
     [Fact]
+    public void A_validated_handler_with_a_value_resolves_wrapped_in_the_validation_decorator()
+    {
+        using var provider = Build(commands => commands.AddValidated<Ping, int, PingHandler, PingValidator>());
+        using var scope = provider.CreateScope();
+
+        var handler = scope.ServiceProvider.GetRequiredService<ICommandHandler<Ping, int>>();
+
+        Assert.IsType<ValidationDecorator<Ping, int>>(handler);
+    }
+
+    [Fact]
+    public void A_validated_handler_without_a_value_resolves_wrapped_in_the_validation_decorator()
+    {
+        using var provider = Build(commands => commands.AddValidated<Poke, PokeHandler, PokeValidator>());
+        using var scope = provider.CreateScope();
+
+        var handler = scope.ServiceProvider.GetRequiredService<ICommandHandler<Poke>>();
+
+        Assert.IsType<ValidationDecorator<Poke>>(handler);
+    }
+
+    [Fact]
+    public void The_validator_itself_is_not_registered()
+    {
+        using var provider = Build(commands => commands.AddValidated<Ping, int, PingHandler, PingValidator>());
+        using var scope = provider.CreateScope();
+
+        Assert.Null(scope.ServiceProvider.GetService<IValidator<Ping>>());
+        Assert.Null(scope.ServiceProvider.GetService<PingValidator>());
+    }
+
+    [Fact]
+    public void Registering_a_validated_handler_for_a_command_that_already_has_one_throws()
+    {
+        var commands = new ServiceCollection().AddCommandHandlers<PingDbContext>().Add<Ping, int, PingHandler>();
+
+        Assert.Throws<InvalidOperationException>(() => commands.AddValidated<Ping, int, PingHandler, PingValidator>());
+    }
+
+    [Fact]
     public void Handlers_are_scoped()
     {
         using var provider = Build(commands => commands.Add<Ping, int, PingHandler>());
@@ -88,6 +128,16 @@ public sealed class CommandHandlerRegistrarTests
     {
         public Task<Result> HandleAsync(Poke command, CancellationToken cancellationToken) =>
             Task.FromResult(Result.Success());
+    }
+
+    private sealed class PingValidator : IValidator<Ping>
+    {
+        public IReadOnlyList<FieldError> Validate(Ping instance) => [];
+    }
+
+    private sealed class PokeValidator : IValidator<Poke>
+    {
+        public IReadOnlyList<FieldError> Validate(Poke instance) => [];
     }
 
     private sealed class PingDbContext(DbContextOptions<PingDbContext> options) : ModuleDbContext(options)

@@ -15,6 +15,7 @@ public sealed class SampleOrdersController(
     /// <summary><c>POST /api/sample/orders</c>: 201 with the new order's address in <c>Location</c> and <c>{ id }</c>.</summary>
     [HttpPost]
     [ProducesResponseType<CreatedResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     public async Task<ActionResult<CreatedResponse>> Create(CreateSampleOrder command, CancellationToken cancellationToken)
     {
         var result = await createOrder.HandleAsync(command, cancellationToken);

@@ -34,7 +34,7 @@ public sealed class SampleModule : IModule
         services.AddScoped<IQueryHandler<GetSampleOrder, SampleOrderDto>, GetSampleOrderHandler>();
 
         services.AddCommandHandlers<SampleDbContext>()
-            .Add<CreateSampleOrder, SampleOrderId, CreateSampleOrderHandler>()
+            .AddValidated<CreateSampleOrder, SampleOrderId, CreateSampleOrderHandler, CreateSampleOrderValidator>()
             .Add<PlaceSampleOrder, PlaceSampleOrderHandler>();
     }
 }
