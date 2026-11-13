@@ -7,7 +7,7 @@ namespace Voluntro.Api.IntegrationTests.Sample.Persistence;
 /// The sample module's DbContext. Schema, naming and conventions all come from <see cref="ModuleDbContext"/>;
 /// the module only names its schema and applies its entity configurations.
 /// </summary>
-public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options) : ModuleDbContext(options)
+public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options) : ModuleDbContext(options), ISampleDbContext
 {
     public DbSet<SampleOrder> Orders => Set<SampleOrder>();
 

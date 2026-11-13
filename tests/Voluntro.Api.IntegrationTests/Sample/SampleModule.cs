@@ -26,8 +26,12 @@ public sealed class SampleModule : IModule
     public void Register(IServiceCollection services, IConfiguration config)
     {
         services.AddModuleDbContext<SampleDbContext>();
+        services.AddScoped<ISampleDbContext>(provider => provider.GetRequiredService<SampleDbContext>());
 
         services.AddScoped<IQueryHandler<GetSampleItem, SampleItemDto>, GetSampleItemHandler>();
         services.AddScoped<IQueryHandler<ListSampleItems, PagedList<SampleItemDto>>, ListSampleItemsHandler>();
+
+        services.AddScoped<ICommandHandler<CreateSampleOrder, SampleOrderId>, CreateSampleOrderHandler>();
+        services.AddScoped<IQueryHandler<GetSampleOrder, SampleOrderDto>, GetSampleOrderHandler>();
     }
 }
