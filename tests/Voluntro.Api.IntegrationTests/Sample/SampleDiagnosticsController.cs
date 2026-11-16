@@ -33,10 +33,28 @@ public sealed class SampleDiagnosticsController : ApiController
     [HttpPost("bodies/dictionary")]
     public ActionResult DictionaryBody([FromBody] IReadOnlyDictionary<string, int> values) => NoContent();
 
+    /// <summary>Parameters with explicit names, which a binding error must repeat exactly as declared.</summary>
+    [HttpGet("names")]
+    public ActionResult ExplicitNames(
+        [FromQuery(Name = "ID")] int id,
+        [FromQuery(Name = "$top")] int top,
+        [FromQuery(Name = "Lines")] SampleQuantity[] lines,
+        [FromHeader(Name = "X-Request-Id")] Guid requestId,
+        [FromQuery] SampleNamedQuery query) => NoContent();
+
     /// <summary>A bug: an unhandled exception.</summary>
     [HttpGet("boom")]
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "MVC actions must be instance methods.")]
     public ActionResult Boom() => throw new InvalidOperationException(SecretExceptionMessage);
+}
+
+/// <summary>Query parameters of <see cref="SampleDiagnosticsController.ExplicitNames"/>: one named explicitly, one not.</summary>
+public sealed class SampleNamedQuery
+{
+    [FromQuery(Name = "MAX")]
+    public int? Max { get; init; }
+
+    public int? PageSize { get; init; }
 }
 
 /// <summary>An element of <see cref="SampleDiagnosticsController.ArrayBody"/>'s body.</summary>

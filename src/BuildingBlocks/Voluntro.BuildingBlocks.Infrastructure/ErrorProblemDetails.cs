@@ -47,9 +47,10 @@ internal static class ErrorProblemDetails
     /// </summary>
     public static IActionResult FromModelState(ActionContext context)
     {
+        var explicitNames = ExplicitNames(context);
         var fieldErrors = context.ModelState
             .Where(entry => entry.Value is { ValidationState: ModelValidationState.Invalid })
-            .Select(entry => new FieldError(ToFieldPath(entry.Key), FieldErrorCodes.InvalidValue))
+            .Select(entry => new FieldError(ToFieldPath(entry.Key, explicitNames), FieldErrorCodes.InvalidValue))
             .ToList();
 
         // Not expected: MVC only calls this for an invalid ModelState, which has at least one invalid entry.
@@ -68,17 +69,18 @@ internal static class ErrorProblemDetails
     /// A ModelState key as the client's field path. The JSON formatter's keys are JSON paths in the client's own
     /// names, and the path is what follows the root <c>$</c>: <c>$.lines[0].quantity</c> → <c>lines[0].quantity</c>,
     /// <c>$[1].quantity</c> (an array body) → <c>[1].quantity</c>, <c>$['my key']</c> → <c>['my key']</c>. The other
-    /// keys are C# names (<c>PageSize</c>), camelCased per segment. The empty key (a missing or unreadable body),
-    /// <c>$</c> itself and <c>$.</c> (a dictionary key that is the empty string) become <c>$</c>.
+    /// keys are C# names (<c>PageSize</c>), camelCased per segment, except a name in
+    /// <paramref name="explicitNames"/>, which is kept as declared (<c>X-Request-Id</c>). The empty key (a missing or
+    /// unreadable body), <c>$</c> itself and <c>$.</c> (a dictionary key that is the empty string) become <c>$</c>.
     /// </summary>
-    internal static string ToFieldPath(string key)
+    internal static string ToFieldPath(string key, IReadOnlySet<string> explicitNames)
     {
         if (key.Length == 0)
         {
             return BodyField;
         }
 
-        if (key[0] == '$')
+        if (IsJsonPath(key))
         {
             var path = key.StartsWith("$.", StringComparison.Ordinal) ? key[2..] : key[1..];
 
@@ -86,7 +88,58 @@ internal static class ErrorProblemDetails
             return path.Length == 0 ? BodyField : path;
         }
 
-        return string.Join('.', key.Split('.').Select(JsonNamingPolicy.CamelCase.ConvertName));
+        // An explicit name may hold a dot itself, so the whole key is tried before its segments.
+        return explicitNames.Contains(key)
+            ? key
+            : string.Join('.', key.Split('.').Select(segment => ToFieldName(segment, explicitNames)));
+    }
+
+    // "$", "$.name", "$[0]", "$['my key']". A query parameter may start with $ too ($top), and is no path.
+    private static bool IsJsonPath(string key) => key[0] == '$' && (key.Length == 1 || key[1] is '.' or '[');
+
+    // A segment may end in an index: "Lines[0]" is the explicit name "Lines".
+    private static string ToFieldName(string segment, IReadOnlySet<string> explicitNames)
+    {
+        var index = segment.IndexOf('[', StringComparison.Ordinal);
+        var name = index < 0 ? segment : segment[..index];
+
+        return explicitNames.Contains(name) ? segment : JsonNamingPolicy.CamelCase.ConvertName(segment);
+    }
+
+    /// <summary>
+    /// The names the action's parameters were given explicitly, e.g. <c>[FromQuery(Name = "q")]</c> or
+    /// <c>[FromHeader(Name = "X-Request-Id")]</c>: on a parameter itself, or on a property of a parameter's type.
+    /// They are what the client sent and what the OpenAPI document lists
+    /// (<see cref="CamelCaseQueryParameterNames"/> leaves them alone too), so they are never camelCased.
+    /// </summary>
+    private static HashSet<string> ExplicitNames(ActionContext context)
+    {
+        var metadataProvider = context.HttpContext.RequestServices.GetRequiredService<IModelMetadataProvider>();
+        var names = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var parameter in context.ActionDescriptor.Parameters.Concat(context.ActionDescriptor.BoundProperties))
+        {
+            if (parameter.BindingInfo?.BinderModelName is { } parameterName)
+            {
+                names.Add(parameterName);
+            }
+
+            // The body's keys are JSON paths, in the client's names already.
+            if (parameter.BindingInfo?.BindingSource == BindingSource.Body)
+            {
+                continue;
+            }
+
+            foreach (var property in metadataProvider.GetMetadataForType(parameter.ParameterType).Properties)
+            {
+                if (property.BinderModelName is { } propertyName)
+                {
+                    names.Add(propertyName);
+                }
+            }
+        }
+
+        return names;
     }
 
     private static int ToStatusCode(ErrorType type) => type switch

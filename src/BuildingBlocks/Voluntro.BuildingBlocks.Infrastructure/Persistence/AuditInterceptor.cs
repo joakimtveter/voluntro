@@ -51,13 +51,13 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
             return;
         }
 
-        // SavingChanges runs before EF detects changes itself; a line added to a loaded order through its
-        // private list is only Added once changes are detected.
-        context.ChangeTracker.DetectChanges();
-
         var now = timeProvider.GetUtcNow();
         var userId = currentUser.UserId;
+
+        // SavingChanges runs before EF detects changes itself, and a line added to a loaded order through its
+        // private list is only Added once they are. Entries() detects them, so no DetectChanges call is needed.
         var entries = context.ChangeTracker.Entries().ToList();
+        var principals = new PrincipalIndex(entries);
         var rootsToStamp = new HashSet<EntityEntry>(ReferenceEqualityComparer.Instance);
 
         foreach (var entry in entries)
@@ -81,7 +81,7 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
             }
             else if (AggregateRoots.IsEntity(type))
             {
-                var root = FindRoot(entry, entries);
+                var root = FindRoot(entry, principals);
 
                 // A new root is stamped as created; a deleted one takes its children with it.
                 if (root.State is EntityState.Unchanged or EntityState.Modified)
@@ -115,7 +115,7 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
     /// <exception cref="InvalidOperationException">
     /// The entity has no owner in the model or more than one, it moved to another owner, or its owner isn't tracked.
     /// </exception>
-    private static EntityEntry FindRoot(EntityEntry child, IReadOnlyList<EntityEntry> entries)
+    private static EntityEntry FindRoot(EntityEntry child, PrincipalIndex principals)
     {
         var current = child;
 
@@ -135,7 +135,7 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
                     "new child to the other.");
             }
 
-            current = FindPrincipal(current, ownership, entries)
+            current = principals.Find(current, ownership)
                 ?? throw new InvalidOperationException(
                     $"A {child.Metadata.ClrType.Name} changed, but its {ownership.PrincipalEntityType.ClrType.Name} " +
                     "isn't tracked. Load the aggregate and change the child through it, so the root's version is " +
@@ -165,19 +165,63 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
         };
     }
 
-    private static EntityEntry? FindPrincipal(EntityEntry dependent, IForeignKey foreignKey, IReadOnlyList<EntityEntry> entries)
+    /// <summary>
+    /// Finds the tracked entry a foreign key points at. The entries are indexed once per foreign key, on first use,
+    /// so a save that changes many children doesn't scan every tracked entry for each of them.
+    /// </summary>
+    private sealed class PrincipalIndex(IReadOnlyList<EntityEntry> entries)
     {
-        // A deleted row's foreign key may already be cleared by a cascade; its original value still names the owner.
-        var foreignKeyValues = foreignKey.Properties
-            .Select(property => dependent.State == EntityState.Deleted
-                ? dependent.Property(property.Name).OriginalValue
-                : dependent.Property(property.Name).CurrentValue)
-            .ToList();
+        private readonly Dictionary<IForeignKey, Dictionary<KeyValues, EntityEntry>> _principals = [];
 
-        return entries.FirstOrDefault(candidate =>
-            foreignKey.PrincipalEntityType.IsAssignableFrom(candidate.Metadata)
-            && foreignKey.PrincipalKey.Properties
-                .Select(property => candidate.Property(property.Name).CurrentValue)
-                .SequenceEqual(foreignKeyValues));
+        public EntityEntry? Find(EntityEntry dependent, IForeignKey foreignKey)
+        {
+            if (!_principals.TryGetValue(foreignKey, out var byKey))
+            {
+                byKey = [];
+                foreach (var candidate in entries)
+                {
+                    if (foreignKey.PrincipalEntityType.IsAssignableFrom(candidate.Metadata))
+                    {
+                        byKey.TryAdd(
+                            new KeyValues(foreignKey.PrincipalKey.Properties
+                                .Select(property => candidate.Property(property.Name).CurrentValue)
+                                .ToArray()),
+                            candidate);
+                    }
+                }
+
+                _principals.Add(foreignKey, byKey);
+            }
+
+            // A deleted row's foreign key may already be cleared by a cascade; its original value still names the owner.
+            var foreignKeyValues = new KeyValues(foreignKey.Properties
+                .Select(property => dependent.State == EntityState.Deleted
+                    ? dependent.Property(property.Name).OriginalValue
+                    : dependent.Property(property.Name).CurrentValue)
+                .ToArray());
+
+            return byKey.GetValueOrDefault(foreignKeyValues);
+        }
+    }
+
+    /// <summary>The values of a key or a foreign key, equal when each value equals its counterpart.</summary>
+    private readonly struct KeyValues(object?[] values) : IEquatable<KeyValues>
+    {
+        private readonly object?[] _values = values;
+
+        public bool Equals(KeyValues other) => _values.SequenceEqual(other._values);
+
+        public override bool Equals(object? obj) => obj is KeyValues other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            var hash = default(HashCode);
+            foreach (var value in _values)
+            {
+                hash.Add(value);
+            }
+
+            return hash.ToHashCode();
+        }
     }
 }

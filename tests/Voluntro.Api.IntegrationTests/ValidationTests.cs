@@ -125,6 +125,47 @@ public sealed class ValidationTests(PostgresDatabase database) : DatabaseTests(d
         await AssertValidationErrorsAsync(response, ("page", ["invalid_value"]));
     }
 
+    // CamelCasing an explicit name would report a field the client never sent and the OpenAPI document doesn't list.
+    [Theory]
+    [InlineData("?ID=abc", "ID")]
+    [InlineData("?Lines[0].quantity=abc", "Lines[0].quantity")]
+    [InlineData("?MAX=abc", "MAX")]
+    [InlineData("?pageSize=abc", "pageSize")]
+    public async Task An_unparsable_query_value_with_an_explicit_name_is_named_as_declared(string query, string field)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var client = Api.CreateClient();
+
+        using var response = await client.GetAsync("/api/sample/names" + query, ct);
+
+        await AssertValidationErrorsAsync(response, (field, ["invalid_value"]));
+    }
+
+    // A name that starts with $ is not a JSON path, and keeps its $.
+    [Fact]
+    public async Task An_unparsable_query_value_whose_name_starts_with_a_dollar_keeps_it()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var client = Api.CreateClient();
+
+        using var response = await client.GetAsync("/api/sample/names?$top=abc", ct);
+
+        await AssertValidationErrorsAsync(response, ("$top", ["invalid_value"]));
+    }
+
+    [Fact]
+    public async Task An_unparsable_header_is_named_as_declared()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var client = Api.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/sample/names");
+        request.Headers.Add("X-Request-Id", "not-a-guid");
+
+        using var response = await client.SendAsync(request, ct);
+
+        await AssertValidationErrorsAsync(response, ("X-Request-Id", ["invalid_value"]));
+    }
+
     private static StringContent Json(string body) => new(body, Encoding.UTF8, "application/json");
 
     private static async Task AssertValidationErrorsAsync(
