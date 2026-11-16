@@ -127,6 +127,26 @@ public sealed class CommandHandlerRegistrarTests
         Assert.IsType<ValidationDecorator<Rename>>(scope.ServiceProvider.GetRequiredService<ICommandHandler<Rename>>());
     }
 
+    // A missing version binds as 0, which only a validator's RequireVersion turns into a 400.
+    [Fact]
+    public void A_command_with_a_version_needs_a_validator()
+    {
+        var commands = new ServiceCollection().AddCommandHandlers<PingDbContext>();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => commands.Add<Archive, ArchiveHandler>());
+
+        Assert.Contains(nameof(VersionValidation.RequireVersion), exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_command_with_a_version_can_be_registered_with_a_validator()
+    {
+        using var provider = Build(commands => commands.AddValidated<Archive, ArchiveHandler, ArchiveValidator>());
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<ValidationDecorator<Archive>>(scope.ServiceProvider.GetRequiredService<ICommandHandler<Archive>>());
+    }
+
     [Fact]
     public void A_handler_whose_dependency_is_not_registered_fails_when_the_container_is_validated()
     {
@@ -200,6 +220,25 @@ public sealed class CommandHandlerRegistrarTests
     private sealed class RenameValidator : IValidator<Rename>
     {
         public IReadOnlyList<FieldError> Validate(Rename instance) => [];
+    }
+
+    /// <summary>An update made of value types only: nothing binds as null, but the version can be left out.</summary>
+    private sealed record Archive(Guid Id, uint Version);
+
+    private sealed class ArchiveHandler : ICommandHandler<Archive>
+    {
+        public Task<Result> HandleAsync(Archive command, CancellationToken cancellationToken) =>
+            Task.FromResult(Result.Success());
+    }
+
+    private sealed class ArchiveValidator : IValidator<Archive>
+    {
+        public IReadOnlyList<FieldError> Validate(Archive instance)
+        {
+            var errors = new List<FieldError>();
+            errors.RequireVersion(instance.Version);
+            return errors;
+        }
     }
 
     private interface INotRegistered;
