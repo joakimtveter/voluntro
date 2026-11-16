@@ -25,6 +25,8 @@ public sealed class UpdateSampleOrderValidator : IValidator<UpdateSampleOrder>
             errors.Add(new FieldError("customerName", FieldErrorCodes.TooLong));
         }
 
+        errors.RequireVersion(instance.Version);
+
         return errors;
     }
 }

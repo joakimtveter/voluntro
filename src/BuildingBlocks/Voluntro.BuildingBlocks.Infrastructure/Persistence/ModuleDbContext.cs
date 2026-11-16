@@ -1,6 +1,9 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.Extensions.Logging;
 using Voluntro.BuildingBlocks.Application;
 using Voluntro.SharedKernel;
 
@@ -27,12 +30,27 @@ public abstract class ModuleDbContext(DbContextOptions options) : DbContext(opti
             await SaveChangesAsync(cancellationToken);
             return Result.Success();
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateConcurrencyException exception)
         {
-            // A row's xmin no longer matched: someone else saved the aggregate after it was loaded (ADR-0011).
+            // Usually a row's xmin no longer matched: someone else saved the aggregate after it was loaded
+            // (ADR-0011). A bug that updates or deletes a row that doesn't exist fails the same way, so the rows are
+            // logged to tell the two apart.
+            var logger = this.GetService<ILoggerFactory>().CreateLogger(GetType());
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                var rows = DescribeRows(exception.Entries);
+                PersistenceLog.ConcurrencyConflict(logger, GetType().Name, rows, exception);
+            }
+
             return CommonErrors.ConcurrencyConflict;
         }
     }
+
+    // "SampleOrder 0193…, SampleOrderLine 0193…": IDs only, never property values.
+    private static string DescribeRows(IEnumerable<EntityEntry> entries) =>
+        string.Join(", ", entries.Select(entry =>
+            $"{entry.Metadata.ClrType.Name} " +
+            string.Join("/", entry.Metadata.FindPrimaryKey()?.Properties.Select(key => entry.Property(key.Name).CurrentValue) ?? [])));
 
     void IUnitOfWork.DiscardChanges() => ChangeTracker.Clear();
 

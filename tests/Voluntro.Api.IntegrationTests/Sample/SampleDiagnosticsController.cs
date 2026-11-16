@@ -25,8 +25,19 @@ public sealed class SampleDiagnosticsController : ApiController
     [HttpGet("errors")]
     public ActionResult FailFromQuery([FromQuery] ErrorType type) => Problem(new Error(RequestedErrorCode, type));
 
+    /// <summary>A body that is a JSON array, so a binding error's path starts at an index: <c>[1].quantity</c>.</summary>
+    [HttpPost("bodies/array")]
+    public ActionResult ArrayBody([FromBody] IReadOnlyList<SampleQuantity> lines) => NoContent();
+
+    /// <summary>A body with keys of the client's choosing, so a key that isn't a plain name comes in brackets.</summary>
+    [HttpPost("bodies/dictionary")]
+    public ActionResult DictionaryBody([FromBody] IReadOnlyDictionary<string, int> values) => NoContent();
+
     /// <summary>A bug: an unhandled exception.</summary>
     [HttpGet("boom")]
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "MVC actions must be instance methods.")]
     public ActionResult Boom() => throw new InvalidOperationException(SecretExceptionMessage);
 }
+
+/// <summary>An element of <see cref="SampleDiagnosticsController.ArrayBody"/>'s body.</summary>
+public sealed record SampleQuantity(int Quantity);

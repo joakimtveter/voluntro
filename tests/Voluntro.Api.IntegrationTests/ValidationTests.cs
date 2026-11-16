@@ -80,6 +80,41 @@ public sealed class ValidationTests(PostgresDatabase database) : DatabaseTests(d
     }
 
     [Fact]
+    public async Task A_field_in_a_body_that_is_an_array_is_named_from_its_index()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var client = Api.CreateClient();
+
+        using var response = await client.PostAsync(
+            "/api/sample/bodies/array", Json("""[ { "quantity": 1 }, { "quantity": "many" } ]"""), ct);
+
+        await AssertValidationErrorsAsync(response, ("[1].quantity", ["invalid_value"]));
+    }
+
+    [Fact]
+    public async Task A_key_that_is_not_a_plain_name_keeps_its_brackets()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var client = Api.CreateClient();
+
+        using var response = await client.PostAsync("/api/sample/bodies/dictionary", Json("""{ "my key": "many" }"""), ct);
+
+        await AssertValidationErrorsAsync(response, ("['my key']", ["invalid_value"]));
+    }
+
+    // Its JSON path is "$.", which has no field name left once the root is stripped.
+    [Fact]
+    public async Task An_empty_key_is_an_invalid_value_of_the_whole_body()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var client = Api.CreateClient();
+
+        using var response = await client.PostAsync("/api/sample/bodies/dictionary", Json("""{ "": "many" }"""), ct);
+
+        await AssertValidationErrorsAsync(response, ("$", ["invalid_value"]));
+    }
+
+    [Fact]
     public async Task An_unparsable_query_value_is_an_invalid_value_named_as_the_client_sent_it()
     {
         var ct = TestContext.Current.CancellationToken;

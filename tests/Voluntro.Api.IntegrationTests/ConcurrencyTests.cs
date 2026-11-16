@@ -1,8 +1,11 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Voluntro.Api.IntegrationTests.Database;
 using Voluntro.Api.IntegrationTests.Sample;
 using Voluntro.Api.IntegrationTests.Sample.Persistence;
@@ -51,6 +54,34 @@ public sealed class ConcurrencyTests(PostgresDatabase database) : DatabaseTests(
 
         await AssertConflictAsync(stale);
         Assert.Equal("Ola Nordmann", (await ReadAsync(order.Id)).CustomerName);
+    }
+
+    // A missing version binds as 0; without the validator's check it would be a 409 that no reload can fix.
+    [Fact]
+    public async Task An_update_without_a_version_is_a_validation_error()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var order = await SavedOrderAsync();
+        using var client = Api.CreateClient();
+
+        using var response = await client.PutAsJsonAsync(
+            $"/api/sample/orders/{order.Id}", new { customerName = "Ola Nordmann" }, ct);
+
+        await AssertVersionRequiredAsync(response);
+    }
+
+    [Fact]
+    public async Task A_line_added_without_a_version_is_a_validation_error()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var order = await SavedOrderAsync();
+        using var client = Api.CreateClient();
+
+        using var response = await client.PostAsJsonAsync(
+            $"/api/sample/orders/{order.Id}/lines", new { productName = "Candles", quantity = 12 }, ct);
+
+        await AssertVersionRequiredAsync(response);
+        Assert.Empty((await ReadAsync(order.Id)).Lines);
     }
 
     [Fact]
@@ -151,7 +182,63 @@ public sealed class ConcurrencyTests(PostgresDatabase database) : DatabaseTests(
         Assert.Equal("Per Hansen", (await ReadAsync(order.Id)).CustomerName);
     }
 
+    // A bug that updates a missing row fails the same way as a real conflict; the rows in the log tell them apart.
+    [Fact]
+    public async Task A_conflict_on_save_is_logged_with_the_rows_it_hit()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var logs = new LogCapture();
+        using var api = Api.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+            services.AddSingleton<ILoggerProvider>(logs)));
+        var order = await SavedOrderAsync();
+
+        await using var mine = api.Services.CreateAsyncScope();
+        await Db(mine).Orders.SingleAsync(o => o.Id == order.Id, ct);
+
+        await using (var theirs = api.Services.CreateAsyncScope())
+        {
+            var theirCopy = await Db(theirs).Orders.SingleAsync(o => o.Id == order.Id, ct);
+            theirCopy.Update("Per Hansen", note: null);
+            await Db(theirs).SaveChangesAsync(ct);
+        }
+
+        var update = mine.ServiceProvider.GetRequiredService<ICommandHandler<UpdateSampleOrder>>();
+        var result = await update.HandleAsync(new UpdateSampleOrder(order.Id, "Ola Nordmann", null, order.Version), ct);
+
+        Assert.Equal(CommonErrors.ConcurrencyConflict, result.Error);
+        var conflict = Assert.Single(logs.Messages, message => message.Contains("concurrency conflict", StringComparison.Ordinal));
+        Assert.Contains($"SampleOrder {order.Id}", conflict, StringComparison.Ordinal);
+        Assert.DoesNotContain("Ola Nordmann", conflict, StringComparison.Ordinal);
+    }
+
     private static SampleDbContext Db(AsyncServiceScope scope) => scope.ServiceProvider.GetRequiredService<SampleDbContext>();
+
+    private sealed class LogCapture : ILoggerProvider
+    {
+        public ConcurrentQueue<string> Messages { get; } = new();
+
+        public ILogger CreateLogger(string categoryName) => new Logger(Messages);
+
+        public void Dispose()
+        {
+        }
+
+        private sealed class Logger(ConcurrentQueue<string> messages) : ILogger
+        {
+            public IDisposable? BeginScope<TState>(TState state)
+                where TState : notnull => null;
+
+            public bool IsEnabled(LogLevel logLevel) => true;
+
+            public void Log<TState>(
+                LogLevel logLevel,
+                EventId eventId,
+                TState state,
+                Exception? exception,
+                Func<TState, Exception?, string> formatter) =>
+                messages.Enqueue(formatter(state, exception));
+        }
+    }
 
     private static async Task AssertConflictAsync(HttpResponseMessage response)
     {
@@ -159,6 +246,16 @@ public sealed class ConcurrencyTests(PostgresDatabase database) : DatabaseTests(
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         using var body = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
         Assert.Equal("common.concurrency_conflict", body.RootElement.GetProperty("code").GetString());
+    }
+
+    private static async Task AssertVersionRequiredAsync(HttpResponseMessage response)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var body = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+        var errors = body.RootElement.GetProperty("errors");
+        Assert.Equal(["version"], errors.EnumerateObject().Select(field => field.Name));
+        Assert.Equal("required", errors.GetProperty("version")[0].GetString());
     }
 
     /// <summary>A saved order, read back so its version is the one the database assigned.</summary>

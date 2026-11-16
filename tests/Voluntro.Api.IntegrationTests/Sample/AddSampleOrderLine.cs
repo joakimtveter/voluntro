@@ -36,6 +36,8 @@ public sealed class AddSampleOrderLineValidator : IValidator<AddSampleOrderLine>
             errors.Add(new FieldError("quantity", FieldErrorCodes.OutOfRange));
         }
 
+        errors.RequireVersion(instance.Version);
+
         return errors;
     }
 }

@@ -66,19 +66,24 @@ internal static class ErrorProblemDetails
 
     /// <summary>
     /// A ModelState key as the client's field path. The JSON formatter's keys are JSON paths in the client's own
-    /// names (<c>$.lines[0].quantity</c>); the others are C# names (<c>PageSize</c>), camelCased per segment.
-    /// The empty key (a missing or unreadable body) and <c>$</c> itself become <c>$</c>.
+    /// names, and the path is what follows the root <c>$</c>: <c>$.lines[0].quantity</c> → <c>lines[0].quantity</c>,
+    /// <c>$[1].quantity</c> (an array body) → <c>[1].quantity</c>, <c>$['my key']</c> → <c>['my key']</c>. The other
+    /// keys are C# names (<c>PageSize</c>), camelCased per segment. The empty key (a missing or unreadable body),
+    /// <c>$</c> itself and <c>$.</c> (a dictionary key that is the empty string) become <c>$</c>.
     /// </summary>
     internal static string ToFieldPath(string key)
     {
-        if (key.Length == 0 || key == BodyField)
+        if (key.Length == 0)
         {
             return BodyField;
         }
 
-        if (key.StartsWith("$.", StringComparison.Ordinal))
+        if (key[0] == '$')
         {
-            return key[2..];
+            var path = key.StartsWith("$.", StringComparison.Ordinal) ? key[2..] : key[1..];
+
+            // Never empty: FieldError rejects an empty field, which would turn a malformed request into a 500.
+            return path.Length == 0 ? BodyField : path;
         }
 
         return string.Join('.', key.Split('.').Select(JsonNamingPolicy.CamelCase.ConvertName));

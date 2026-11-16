@@ -38,6 +38,8 @@ public static class ProblemDetailsServiceCollectionExtensions
 
         // Request shape is the validators' job. MVC would otherwise treat every non-nullable reference property as
         // [Required] and answer a missing customerName with invalid_value before the validator could say required.
+        // So a missing property binds as null: the command registrar refuses a command with a non-nullable reference
+        // property unless it has a validator, and a query parameter that may be left out is declared nullable.
         services.Configure<MvcOptions>(options =>
             options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true);
 

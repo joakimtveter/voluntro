@@ -94,6 +94,38 @@ public sealed class AuditTests(PostgresDatabase database) : DatabaseTests(databa
         Assert.NotEqual(created.Version, changed.Version);
     }
 
+    // The stamp gets the value it already has, which EF alone wouldn't write; the root's row must be written anyway.
+    [Fact]
+    public async Task A_change_to_a_child_alone_changes_the_roots_version_even_when_the_clock_stands_still()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var stopped = Api.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.AddSingleton<TimeProvider>(new StoppedClock(new DateTimeOffset(2026, 11, 16, 12, 0, 0, TimeSpan.Zero)))));
+        var order = SampleOrder.Create("Kari Nordmann", note: null);
+
+        await using (var scope = stopped.Services.CreateAsyncScope())
+        {
+            var db = Db(scope);
+            db.Add(order);
+            await db.SaveChangesAsync(ct);
+        }
+
+        var created = await ReadAsync(order.Id);
+
+        await using (var scope = stopped.Services.CreateAsyncScope())
+        {
+            var db = Db(scope);
+            var loaded = await db.Orders.Include(o => o.Lines).SingleAsync(o => o.Id == order.Id, ct);
+
+            loaded.AddLine("Candles", 12);
+            await db.SaveChangesAsync(ct);
+        }
+
+        var changed = await ReadAsync(order.Id);
+        Assert.Equal(created.ModifiedAt, changed.ModifiedAt);
+        Assert.NotEqual(created.Version, changed.Version);
+    }
+
     [Fact]
     public async Task Concurrent_changes_to_children_alone_are_a_concurrency_conflict()
     {
@@ -131,6 +163,28 @@ public sealed class AuditTests(PostgresDatabase database) : DatabaseTests(databa
         Assert.Contains("isn't tracked", exception.Message, StringComparison.Ordinal);
     }
 
+    // Only the order the line joins would be stamped; the one it left would change without a new version.
+    [Fact]
+    public async Task Moving_a_child_to_another_aggregate_throws()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var from = SampleOrder.Create("Kari Nordmann", note: null);
+        from.AddLine("Hymn book", 3);
+        var to = SampleOrder.Create("Ola Nordmann", note: null);
+        await SaveAsync<SampleDbContext>(from, to);
+
+        await using var scope = CreateScope();
+        var db = Db(scope);
+        var orders = await db.Orders.Include(o => o.Lines).ToListAsync(ct);
+        var line = orders.Single(o => o.Id == from.Id).Lines.Single();
+
+        // The sample order has no way to move a line; this is what a method that reassigned a child would do.
+        db.Entry(line).Property(l => l.OrderId).CurrentValue = to.Id;
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => db.SaveChangesAsync(ct));
+        Assert.Contains("moved to another SampleOrder", exception.Message, StringComparison.Ordinal);
+    }
+
     private static SampleDbContext Db(AsyncServiceScope scope) => scope.ServiceProvider.GetRequiredService<SampleDbContext>();
 
     private static async Task<SampleOrderId> CreatedIdAsync(HttpResponseMessage response)
@@ -150,5 +204,10 @@ public sealed class AuditTests(PostgresDatabase database) : DatabaseTests(databa
     private sealed class FixedUser(Guid userId) : ICurrentUser
     {
         public Guid UserId => userId;
+    }
+
+    private sealed class StoppedClock(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
     }
 }

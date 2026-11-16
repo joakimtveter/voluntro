@@ -20,8 +20,10 @@ namespace Voluntro.BuildingBlocks.Infrastructure.Persistence;
 /// <remarks>
 /// A child's root is found through EF's metadata: the foreign key whose principal has a navigation to the child
 /// (<c>HasMany(order =&gt; order.Lines)</c>), followed up to an aggregate root. A reference by ID to another aggregate
-/// has no such navigation and is never followed. The root must be tracked: changing a child without loading its
-/// aggregate is a bug, and saving throws.
+/// has no such navigation and is never followed. Saving throws on a model or a change it can't stamp correctly: a
+/// child with no owning navigation or more than one, a child moved to another owner, or a child changed without
+/// loading its aggregate. Only <see cref="Entity{TId}"/> children stamp their root: rows that aren't entities (owned
+/// types in a table of their own, many-to-many join rows) don't (ADR-0011).
 /// </remarks>
 internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider timeProvider) : SaveChangesInterceptor
 {
@@ -91,9 +93,13 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
 
         foreach (var root in rootsToStamp)
         {
-            // Setting a property through the entry marks it, and so the root, Modified.
-            root.Property(nameof(AggregateRoot<>.ModifiedAt)).CurrentValue = now;
+            var modifiedAt = root.Property(nameof(AggregateRoot<>.ModifiedAt));
+            modifiedAt.CurrentValue = now;
             root.Property(nameof(AggregateRoot<>.ModifiedBy)).CurrentValue = userId;
+
+            // Assigning the value a property already has marks nothing (same user, a stopped clock in a test), and the
+            // root's row must be written whatever the values: that write carries the xmin check.
+            modifiedAt.IsModified = true;
         }
     }
 
@@ -107,7 +113,7 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
 
     /// <summary>Follows the owning foreign keys up from a child entity to its tracked aggregate root.</summary>
     /// <exception cref="InvalidOperationException">
-    /// The entity has no owner in the model, or its owner isn't tracked.
+    /// The entity has no owner in the model or more than one, it moved to another owner, or its owner isn't tracked.
     /// </exception>
     private static EntityEntry FindRoot(EntityEntry child, IReadOnlyList<EntityEntry> entries)
     {
@@ -115,11 +121,19 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
 
         while (!AggregateRoots.IsAggregateRoot(current.Metadata.ClrType))
         {
-            var ownership = current.Metadata.GetForeignKeys().SingleOrDefault(fk => fk.PrincipalToDependent is not null)
-                ?? throw new InvalidOperationException(
-                    $"{current.Metadata.ClrType.Name} is an entity but no aggregate owns it: none of its foreign keys " +
-                    "has a navigation from the principal (HasMany(root => root.Children)). Configure it as a child " +
-                    "of its aggregate root, or make it an aggregate root itself.");
+            var ownership = FindOwnership(current.Metadata);
+
+            // Only the owner the child has now is found and stamped. The aggregate it left would change without a
+            // new version or an xmin check, so a concurrent edit of that aggregate would go unnoticed.
+            if (current.State == EntityState.Modified
+                && ownership.Properties.Any(property => current.Property(property.Name).IsModified))
+            {
+                throw new InvalidOperationException(
+                    $"A {current.Metadata.ClrType.Name} moved to another {ownership.PrincipalEntityType.ClrType.Name}: " +
+                    "its owning foreign key changed. Moving a child between aggregates isn't supported, because the " +
+                    "aggregate it left wouldn't be stamped or version-checked. Remove it from one aggregate and add a " +
+                    "new child to the other.");
+            }
 
             current = FindPrincipal(current, ownership, entries)
                 ?? throw new InvalidOperationException(
@@ -129,6 +143,26 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
         }
 
         return current;
+    }
+
+    /// <summary>The one foreign key whose principal has a navigation to this entity: the way up to its owner.</summary>
+    private static IForeignKey FindOwnership(IEntityType entityType)
+    {
+        var owners = entityType.GetForeignKeys().Where(foreignKey => foreignKey.PrincipalToDependent is not null).ToList();
+
+        return owners.Count switch
+        {
+            1 => owners[0],
+            0 => throw new InvalidOperationException(
+                $"{entityType.ClrType.Name} is an entity but no aggregate owns it: none of its foreign keys " +
+                "has a navigation from the principal (HasMany(root => root.Children)). Configure it as a child " +
+                "of its aggregate root, or make it an aggregate root itself."),
+            _ => throw new InvalidOperationException(
+                $"{entityType.ClrType.Name} has more than one owning navigation " +
+                $"({string.Join(", ", owners.Select(foreignKey => $"{foreignKey.PrincipalEntityType.ClrType.Name}.{foreignKey.PrincipalToDependent!.Name}"))}), " +
+                "so its aggregate root is ambiguous. Keep exactly one, and refer to the others by ID without a " +
+                "collection navigation."),
+        };
     }
 
     private static EntityEntry? FindPrincipal(EntityEntry dependent, IForeignKey foreignKey, IReadOnlyList<EntityEntry> entries)
