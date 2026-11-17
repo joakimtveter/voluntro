@@ -51,7 +51,7 @@ public sealed class SampleOrder : AggregateRoot<SampleOrderId>
     public void Place()
     {
         Status = SampleOrderStatus.Placed;
-        Raise(new SampleOrderPlaced(Id, CustomerId));
+        Raise(new SampleOrderPlaced(Id, CustomerId, CustomerName));
     }
 }
 

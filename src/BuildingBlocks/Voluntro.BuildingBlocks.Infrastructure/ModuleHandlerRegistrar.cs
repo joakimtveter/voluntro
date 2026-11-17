@@ -63,9 +63,15 @@ public sealed class ModuleHandlerRegistrar<TContext>
 
         // Keyed by the context type, so each module saves through its own context. TryAdd: calling AddHandlers twice
         // for one context keeps one unit of work, and a test can register its own under the key first.
+        // AddModuleDbContext adds the same clock; added here too, so the unit of work never lacks one.
+        services.TryAddSingleton(TimeProvider.System);
         var domainEventHandlers = _domainEventHandlers;
         services.TryAddKeyedScoped<IUnitOfWork>(UnitOfWorkKey, (provider, _) =>
-            new ModuleUnitOfWork<TContext>(provider.GetRequiredService<TContext>(), domainEventHandlers, provider));
+            new ModuleUnitOfWork<TContext>(
+                provider.GetRequiredService<TContext>(),
+                domainEventHandlers,
+                provider.GetRequiredService<TimeProvider>(),
+                provider));
     }
 
     // The key the module's IUnitOfWork is registered under: the context type. Tests resolve it with
