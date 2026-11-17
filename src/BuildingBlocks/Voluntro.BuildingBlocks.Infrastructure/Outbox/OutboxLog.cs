@@ -26,4 +26,14 @@ internal static partial class OutboxLog
         Level = LogLevel.Error,
         Message = "Processing the outbox of {Context} failed; it is tried again on the next tick.")]
     public static partial void ProcessingFailed(ILogger logger, string context, Exception exception);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Deleted {OutboxRows} outbox and {InboxRows} inbox rows of {Context} processed or failed before {Cutoff}.")]
+    public static partial void CleanedUp(ILogger logger, string context, int outboxRows, int inboxRows, DateTimeOffset cutoff);
+
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Cleaning up the outboxes failed; it is tried again on the next run.")]
+    public static partial void CleanupFailed(ILogger logger, Exception exception);
 }

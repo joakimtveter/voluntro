@@ -41,10 +41,12 @@ public sealed class VoluntroApiFactory : WebApplicationFactory<Program>
             services.AddModule(new SampleModule(), context.Configuration);
             services.AddModule(new InboundModule(), context.Configuration);
 
-            // Tests deliver the outbox themselves, by calling a module's OutboxProcessor<TContext>.ProcessPendingAsync,
-            // so nothing is delivered behind a test's back. Everything else about outbox processing stays registered.
-            var processing = services.Single(descriptor => descriptor.ImplementationType == typeof(OutboxProcessingService));
-            services.Remove(processing);
+            // Tests deliver and clean up the outbox themselves, by calling OutboxProcessor<TContext>.ProcessPendingAsync
+            // and OutboxCleanup.CleanUpAsync, so nothing happens behind a test's back. Everything else stays registered.
+            foreach (var loop in new[] { typeof(OutboxProcessingService), typeof(OutboxCleanupService) })
+            {
+                services.Remove(services.Single(descriptor => descriptor.ImplementationType == loop));
+            }
         });
     }
 }
