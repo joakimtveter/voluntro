@@ -18,4 +18,4 @@ We chose this over a true inbox per module (the publisher only fans messages out
 - Delivery order is not guaranteed: rows are taken oldest first, but a retried message falls behind newer ones.
 - The consumer's name in the inbox is the handler's full type name. Renaming a handler while one of its messages is being retried delivers that message once more, which consumers tolerate (ADR-0005).
 - A second API instance on the same database must first bring in leases.
-- Processed and failed outbox rows, and inbox rows, are deleted after 7 days. A message can't be redelivered once it is processed or failed, so inbox rows need to outlive it only by its retries, which take minutes.
+- Processed and failed outbox rows, and inbox rows, are deleted after 7 days. A message can't be redelivered once it is processed or failed, so inbox rows need to outlive it only by its retries. Those usually take minutes, but the API may be stopped mid-retry for longer than the retention period, so an inbox row is kept, however old, while its message is still pending in any module's outbox.

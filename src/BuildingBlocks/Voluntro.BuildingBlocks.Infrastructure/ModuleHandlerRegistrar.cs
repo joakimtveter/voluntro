@@ -173,12 +173,21 @@ public sealed class ModuleHandlerRegistrar<TContext>
     /// before the save, after any handlers registered earlier for the same event (ADR-0013).
     /// </summary>
     /// <exception cref="InvalidOperationException">
-    /// <typeparamref name="THandler"/> is already registered for <typeparamref name="TEvent"/>.
+    /// <typeparamref name="TEvent"/> isn't sealed, or <typeparamref name="THandler"/> is already registered for it.
     /// </exception>
     public ModuleHandlerRegistrar<TContext> AddDomainEventHandler<TEvent, THandler>()
         where TEvent : IDomainEvent
         where THandler : class, IDomainEventHandler<TEvent>
     {
+        // The unit of work finds handlers by the raised event's exact type, so a handler for an interface or a base
+        // record would never run.
+        if (!typeof(TEvent).IsSealed)
+        {
+            throw new InvalidOperationException(
+                $"{typeof(THandler).Name} handles {typeof(TEvent).Name}, which isn't sealed. Handlers are matched on the " +
+                "exact type of the raised event, so it would never run: handle each sealed event type instead.");
+        }
+
         _services.TryAddKeyedScoped<THandler>(PipelineKey);
 
         // TEvent is known here, so the cast is compiled in: the unit of work, which only sees IDomainEvent, calls it

@@ -14,6 +14,7 @@ We chose the unit of work over a `SavingChanges` interceptor. In the unit of wor
 
 - A direct `context.SaveChangesAsync()` (a test, a hand-written background job) dispatches nothing. The pipeline, through `IUnitOfWork`, is the only supported way to save. The outbox processor's consumer saves go through it too, so a consumer's own domain events are dispatched.
 - A failed `Result` from a domain event handler stops the round: later handlers don't run, nothing is saved, and the transaction decorator discards the changes and returns the failure. So a handler can veto a command.
+- Handlers are matched on the raised event's exact type, so the registrar refuses an event type that isn't sealed: a handler for an interface or a base record would never run.
 - Several handlers for one event run in registration order. Events in one round run in the order they were raised, but across aggregates in the order the change tracker returns them, which is not guaranteed. Handlers must not depend on the order of different events.
 - Domain event handlers are registered through the module's registrar (`services.AddHandlers<TContext>()`), which binds them to that module's unit of work. `AddModule` throws when the container holds an `IDomainEventHandler<…>` that didn't come from the registrar, because the unit of work would never call it.
 - The translation of `DbUpdateConcurrencyException` into `common.concurrency_conflict` moves from `ModuleDbContext` to `ModuleUnitOfWork` (amends ADR-0012). `ModuleDbContext` no longer implements `IUnitOfWork`.

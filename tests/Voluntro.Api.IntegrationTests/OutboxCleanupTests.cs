@@ -15,7 +15,8 @@ namespace Voluntro.Api.IntegrationTests;
 
 /// <summary>
 /// The cleanup against a real Postgres, with a fake clock: outbox messages processed or failed more than the retention
-/// period (7 days) ago, and inbox records that old, are deleted in every module's schema; pending messages never are.
+/// period (7 days) ago, and inbox records that old, are deleted in every module's schema; pending messages and their
+/// inbox records never are.
 /// </summary>
 public sealed class OutboxCleanupTests(PostgresDatabase database) : DatabaseTests(database)
 {
@@ -76,6 +77,33 @@ public sealed class OutboxCleanupTests(PostgresDatabase database) : DatabaseTest
         await CleanUpAsync(api);
 
         Assert.Equal(1, await CountAsync("sample.outbox WHERE processed_at IS NULL AND failed_at IS NULL"));
+    }
+
+    // The recording consumer handles the message and the refusing one fails, so it stays pending. Then the API is
+    // off for longer than the retention period. If the cleanup deleted the recording consumer's inbox record by age
+    // alone, the redelivery would record the order a second time.
+    [Fact]
+    public async Task An_inbox_record_is_kept_while_its_message_is_pending_however_old()
+    {
+        var clock = NewClock();
+        using var api = WithClock(clock, builder => builder.UseSetting("Outbox:MaxAttempts", "2"));
+        await PlaceOrderAsync(api, InboundFlags.Refuse);
+        await ProcessAsync(api);
+        Assert.Equal(1, await CountAsync("inbound.inbox"));
+
+        clock.Advance(TimeSpan.FromDays(30));
+        await CleanUpAsync(api);
+        Assert.Equal(1, await CountAsync("inbound.inbox"));
+
+        // The second and last attempt: the recording consumer skips it through its inbox, and the message fails.
+        await ProcessAsync(api);
+        Assert.Equal(1, await CountAsync("sample.outbox WHERE failed_at IS NOT NULL"));
+        Assert.Equal(1, await CountAsync("inbound.received_orders"));
+
+        // Finished, so its 30-day-old inbox record goes; the message itself failed just now and stays.
+        await CleanUpAsync(api);
+        Assert.Equal(0, await CountAsync("inbound.inbox"));
+        Assert.Equal(1, await CountAsync("sample.outbox"));
     }
 
     // The retention period is a setting like the others.

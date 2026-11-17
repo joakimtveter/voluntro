@@ -230,6 +230,17 @@ public sealed class ModuleHandlerRegistrarTests
             services.AddHandlers<PingDbContext>().AddDomainEventHandler<Pinged, PingedHandler>());
     }
 
+    // The unit of work matches the raised event's exact type: Moved raised as MovedAway would never reach the handler.
+    [Fact]
+    public void A_domain_event_handler_for_an_event_type_that_is_not_sealed_throws()
+    {
+        var handlers = new ServiceCollection().AddHandlers<PingDbContext>();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => handlers.AddDomainEventHandler<Moved, MovedHandler>());
+
+        Assert.Contains(nameof(Moved), exception.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void A_domain_event_handler_whose_dependency_is_not_registered_fails_when_the_container_is_validated()
     {
@@ -297,6 +308,10 @@ public sealed class ModuleHandlerRegistrarTests
 
     private sealed record Pinged : IDomainEvent;
 
+    private record Moved : IDomainEvent;
+
+    private sealed record MovedAway : Moved;
+
     private sealed record Shipped : IIntegrationEvent
     {
         public static string EventType => "ping.shipped.v1";
@@ -325,6 +340,12 @@ public sealed class ModuleHandlerRegistrarTests
     private sealed class PingedHandler : IDomainEventHandler<Pinged>
     {
         public Task<Result> HandleAsync(Pinged domainEvent, CancellationToken cancellationToken) =>
+            Task.FromResult(Result.Success());
+    }
+
+    private sealed class MovedHandler : IDomainEventHandler<Moved>
+    {
+        public Task<Result> HandleAsync(Moved domainEvent, CancellationToken cancellationToken) =>
             Task.FromResult(Result.Success());
     }
 

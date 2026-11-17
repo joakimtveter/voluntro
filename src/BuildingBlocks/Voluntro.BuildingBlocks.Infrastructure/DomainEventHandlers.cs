@@ -57,8 +57,8 @@ internal sealed class DomainEventHandlers<TContext>
     }
 
     /// <summary>
-    /// The handlers for an event of exactly <paramref name="eventType"/>, in registration order. Events are sealed
-    /// records, so a handler for a base type or interface is never matched.
+    /// The handlers for an event of exactly <paramref name="eventType"/>, in registration order. The registrar accepts
+    /// only sealed event types, so there is no handler for a base type or interface to miss.
     /// </summary>
     public IEnumerable<HandleDomainEvent> For(Type eventType) =>
         _registrations
