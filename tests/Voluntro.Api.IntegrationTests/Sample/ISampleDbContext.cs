@@ -9,4 +9,6 @@ namespace Voluntro.Api.IntegrationTests.Sample;
 public interface ISampleDbContext
 {
     DbSet<SampleOrder> Orders { get; }
+
+    DbSet<SampleCustomer> Customers { get; }
 }

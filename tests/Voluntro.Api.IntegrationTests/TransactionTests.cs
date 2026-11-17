@@ -85,7 +85,8 @@ public sealed class TransactionTests(PostgresDatabase database) : DatabaseTests(
         await theirDb.SaveChangesAsync(ct);
 
         myCopy.Place();
-        var result = await ((IUnitOfWork)myDb).SaveChangesAsync(ct);
+        var myUnitOfWork = mine.ServiceProvider.GetRequiredKeyedService<IUnitOfWork>(typeof(SampleDbContext));
+        var result = await myUnitOfWork.SaveChangesAsync(ct);
 
         Assert.Equal(CommonErrors.ConcurrencyConflict, result.Error);
     }

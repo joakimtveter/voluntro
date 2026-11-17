@@ -56,6 +56,8 @@ public sealed class PersistenceModelTests(VoluntroApiFactory factory) : IClassFi
     [InlineData(typeof(SampleOrder), nameof(SampleOrder.Id))]
     [InlineData(typeof(SampleOrderLine), nameof(SampleOrderLine.Id))]
     [InlineData(typeof(SampleOrderLine), nameof(SampleOrderLine.OrderId))]
+    [InlineData(typeof(SampleOrder), nameof(SampleOrder.CustomerId))] // nullable
+    [InlineData(typeof(SampleCustomer), nameof(SampleCustomer.Id))]
     public void Strongly_typed_ids_are_stored_as_uuid(Type entity, string propertyName)
     {
         WithContext(context =>

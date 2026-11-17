@@ -33,10 +33,11 @@ public sealed class SampleModule : IModule
 
         services.AddScoped<IQueryHandler<GetSampleOrder, SampleOrderDto>, GetSampleOrderHandler>();
 
-        services.AddCommandHandlers<SampleDbContext>()
+        services.AddHandlers<SampleDbContext>()
             .AddValidated<CreateSampleOrder, SampleOrderId, CreateSampleOrderHandler, CreateSampleOrderValidator>()
             .AddValidated<UpdateSampleOrder, UpdateSampleOrderHandler, UpdateSampleOrderValidator>()
             .AddValidated<AddSampleOrderLine, SampleOrderLineId, AddSampleOrderLineHandler, AddSampleOrderLineValidator>()
-            .Add<PlaceSampleOrder, PlaceSampleOrderHandler>();
+            .Add<PlaceSampleOrder, PlaceSampleOrderHandler>()
+            .AddDomainEventHandler<SampleOrderPlaced, CountPlacedOrderHandler>();
     }
 }
