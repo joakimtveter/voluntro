@@ -128,7 +128,8 @@ public sealed class EnvironmentTests(VoluntroApiFactory factory) : IClassFixture
 
         var responses = document.RootElement.GetProperty("paths").GetProperty("/api/sample/orders")
             .GetProperty("post").GetProperty("responses");
-        Assert.Equal(["201"], responses.EnumerateObject().Select(status => status.Name));
+        // 400: the command is validated (ProblemDetails with field errors).
+        Assert.Equal(["201", "400"], responses.EnumerateObject().Select(status => status.Name));
 
         var created = responses.GetProperty("201").GetProperty("content").GetProperty("application/json").GetProperty("schema");
         Assert.EndsWith("/CreatedResponse", created.GetProperty("$ref").GetString(), StringComparison.Ordinal);

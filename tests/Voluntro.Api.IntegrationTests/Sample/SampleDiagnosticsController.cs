@@ -25,8 +25,37 @@ public sealed class SampleDiagnosticsController : ApiController
     [HttpGet("errors")]
     public ActionResult FailFromQuery([FromQuery] ErrorType type) => Problem(new Error(RequestedErrorCode, type));
 
+    /// <summary>A body that is a JSON array, so a binding error's path starts at an index: <c>[1].quantity</c>.</summary>
+    [HttpPost("bodies/array")]
+    public ActionResult ArrayBody([FromBody] IReadOnlyList<SampleQuantity> lines) => NoContent();
+
+    /// <summary>A body with keys of the client's choosing, so a key that isn't a plain name comes in brackets.</summary>
+    [HttpPost("bodies/dictionary")]
+    public ActionResult DictionaryBody([FromBody] IReadOnlyDictionary<string, int> values) => NoContent();
+
+    /// <summary>Parameters with explicit names, which a binding error must repeat exactly as declared.</summary>
+    [HttpGet("names")]
+    public ActionResult ExplicitNames(
+        [FromQuery(Name = "ID")] int id,
+        [FromQuery(Name = "$top")] int top,
+        [FromQuery(Name = "Lines")] SampleQuantity[] lines,
+        [FromHeader(Name = "X-Request-Id")] Guid requestId,
+        [FromQuery] SampleNamedQuery query) => NoContent();
+
     /// <summary>A bug: an unhandled exception.</summary>
     [HttpGet("boom")]
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "MVC actions must be instance methods.")]
     public ActionResult Boom() => throw new InvalidOperationException(SecretExceptionMessage);
 }
+
+/// <summary>Query parameters of <see cref="SampleDiagnosticsController.ExplicitNames"/>: one named explicitly, one not.</summary>
+public sealed class SampleNamedQuery
+{
+    [FromQuery(Name = "MAX")]
+    public int? Max { get; init; }
+
+    public int? PageSize { get; init; }
+}
+
+/// <summary>An element of <see cref="SampleDiagnosticsController.ArrayBody"/>'s body.</summary>
+public sealed record SampleQuantity(int Quantity);

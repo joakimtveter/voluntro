@@ -13,6 +13,9 @@ namespace Voluntro.BuildingBlocks.Infrastructure.Persistence;
 ///   (ADR-0011). Migrations list it, but Npgsql creates no column for it. A module that configures
 ///   <c>Version</c> itself owns the whole mapping; the convention then adds nothing to it.</item>
 ///   <item><see cref="AggregateRoot{TId}.DomainEvents"/> is not mapped; events live in memory until dispatched.</item>
+///   <item>The audit properties need nothing here: Npgsql maps <see cref="DateTimeOffset"/> to <c>timestamptz</c>
+///   and <see cref="Guid"/> to <c>uuid</c>, both required because they are value types. <see cref="AuditInterceptor"/>
+///   assigns them.</item>
 /// </list>
 /// </summary>
 internal sealed class AggregateRootConvention : IModelFinalizingConvention
@@ -25,7 +28,7 @@ internal sealed class AggregateRootConvention : IModelFinalizingConvention
         IConventionContext<IConventionModelBuilder> context)
     {
         var aggregates = modelBuilder.Metadata.GetEntityTypes()
-            .Where(entityType => IsAggregateRoot(entityType.ClrType))
+            .Where(entityType => AggregateRoots.IsAggregateRoot(entityType.ClrType))
             .ToList();
 
         foreach (var aggregate in aggregates)
@@ -54,18 +57,5 @@ internal sealed class AggregateRootConvention : IModelFinalizingConvention
             version.HasColumnName(XminColumn);
             version.HasColumnType(XminType);
         }
-    }
-
-    private static bool IsAggregateRoot(Type type)
-    {
-        for (var current = type.BaseType; current is not null; current = current.BaseType)
-        {
-            if (current.IsGenericType && current.GetGenericTypeDefinition() == typeof(AggregateRoot<>))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

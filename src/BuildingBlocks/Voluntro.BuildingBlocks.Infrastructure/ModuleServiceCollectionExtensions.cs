@@ -28,7 +28,8 @@ public static class ModuleServiceCollectionExtensions
     /// The one way a module is added, used by <c>Program.cs</c> and by the integration-test harness alike.
     /// </summary>
     /// <exception cref="InvalidOperationException">
-    /// A module with the same key, or another module in the same assembly, is already registered.
+    /// A module with the same key, or another module in the same assembly, is already registered; or a command handler
+    /// is registered without <c>AddCommandHandlers</c>.
     /// </exception>
     public static IServiceCollection AddModule(this IServiceCollection services, IModule module, IConfiguration config)
     {
@@ -40,6 +41,7 @@ public static class ModuleServiceCollectionExtensions
 
         // 1. The module registers its own services (handlers, later its DbContext, consumers, ...).
         module.Register(services, config);
+        EnsureCommandHandlersArePipelined(services, module);
 
         // 2. Make the module itself available, e.g. to the module gate and GET /api/platform/modules.
         //    Registered as IModule (not as its concrete type) so IEnumerable<IModule> lists them all.
@@ -50,6 +52,20 @@ public static class ModuleServiceCollectionExtensions
         services.AddControllers().AddApplicationPart(module.GetType().Assembly);
 
         return services;
+    }
+
+    // Handlers never save (ADR-0012): one registered without the registrar's pipeline would answer success and
+    // persist nothing.
+    private static void EnsureCommandHandlersArePipelined(IServiceCollection services, IModule module)
+    {
+        var direct = PipelinedCommandHandlers.CommandsRegisteredDirectly(services);
+        if (direct.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"After registering module '{module.Key}', the handlers for these commands are registered directly in " +
+                $"the container: {string.Join(", ", direct.Select(command => command.Name))}. Without the command " +
+                "pipeline nothing saves their changes. Register them with AddCommandHandlers<TContext>() instead.");
+        }
     }
 
     private static void EnsureNoClash(IServiceCollection services, IModule module)

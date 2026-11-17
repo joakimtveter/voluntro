@@ -94,6 +94,23 @@ public sealed class PersistenceModelTests(VoluntroApiFactory factory) : IClassFi
         });
     }
 
+    [Theory]
+    [InlineData(nameof(SampleOrder.CreatedAt), "created_at", "timestamp with time zone")]
+    [InlineData(nameof(SampleOrder.CreatedBy), "created_by", "uuid")]
+    [InlineData(nameof(SampleOrder.ModifiedAt), "modified_at", "timestamp with time zone")]
+    [InlineData(nameof(SampleOrder.ModifiedBy), "modified_by", "uuid")]
+    public void Audit_stamps_are_required_columns(string propertyName, string column, string type)
+    {
+        WithContext(context =>
+        {
+            var property = DesignTimeModel(context).FindEntityType(typeof(SampleOrder))!.FindProperty(propertyName)!;
+
+            Assert.Equal(column, property.GetColumnName());
+            Assert.Equal(type, property.GetColumnType());
+            Assert.False(property.IsNullable);
+        });
+    }
+
     [Fact]
     public void Domain_events_are_not_mapped()
     {

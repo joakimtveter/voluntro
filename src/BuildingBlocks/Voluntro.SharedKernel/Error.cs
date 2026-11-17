@@ -8,7 +8,12 @@ namespace Voluntro.SharedKernel;
 /// in catalogs next to the aggregate, e.g.
 /// <c>public static class PersonErrors { public static readonly Error NotFound = Error.NotFound("membership.person.not_found"); }</c>.
 /// </summary>
-public sealed partial record Error
+/// <remarks>
+/// Not sealed for exactly one subtype, <see cref="ValidationError"/>, which carries field-level errors. Don't
+/// derive from it otherwise: code and type are the whole contract, and a new kind of failure is a new
+/// <see cref="ErrorType"/>, not a subclass.
+/// </remarks>
+public partial record Error
 {
     /// <exception cref="ArgumentNullException"><paramref name="code"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="code"/> is not lowercase snake_case segments separated by dots.</exception>

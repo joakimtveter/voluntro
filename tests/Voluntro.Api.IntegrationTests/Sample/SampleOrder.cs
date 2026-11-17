@@ -29,6 +29,12 @@ public sealed class SampleOrder : AggregateRoot<SampleOrderId>
 
     public static SampleOrder Create(string customerName, string? note) => new(SampleOrderId.New(), customerName, note);
 
+    public void Update(string customerName, string? note)
+    {
+        CustomerName = customerName;
+        Note = note;
+    }
+
     public SampleOrderLine AddLine(string productName, int quantity)
     {
         var line = new SampleOrderLine(SampleOrderLineId.New(), Id, productName, quantity);
