@@ -1,8 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Voluntro.BuildingBlocks.Application;
+using Voluntro.BuildingBlocks.Infrastructure.Outbox;
 
 namespace Voluntro.BuildingBlocks.Infrastructure.Persistence;
 
@@ -39,6 +43,16 @@ public static class ModuleDbContextServiceCollectionExtensions
                 provider.GetRequiredService<TimeProvider>())));
 
         services.AddSingleton(new ModuleDbContextRegistration(typeof(TContext)));
+
+        // The module's outbox processor, registered but not started: only the API's AddOutboxProcessing runs it.
+        services.AddOptions();
+        services.AddSingleton(provider => new OutboxProcessor<TContext>(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            provider.GetServices<IntegrationEventConsumer>(),
+            provider.GetRequiredService<IOptions<OutboxOptions>>(),
+            provider.GetRequiredService<TimeProvider>(),
+            (provider.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance).CreateLogger<OutboxProcessor<TContext>>()));
+        services.AddSingleton<IOutboxProcessor>(provider => provider.GetRequiredService<OutboxProcessor<TContext>>());
 
         return services;
     }

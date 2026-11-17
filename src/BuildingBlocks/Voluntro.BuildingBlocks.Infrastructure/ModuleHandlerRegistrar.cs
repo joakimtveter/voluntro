@@ -2,6 +2,8 @@ using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Voluntro.BuildingBlocks.Application;
+using Voluntro.BuildingBlocks.Contracts;
+using Voluntro.BuildingBlocks.Infrastructure.Outbox;
 using Voluntro.BuildingBlocks.Infrastructure.Persistence;
 using Voluntro.SharedKernel;
 
@@ -187,6 +189,38 @@ public sealed class ModuleHandlerRegistrar<TContext>
         return this;
     }
 
+    /// <summary>
+    /// Registers a consumer of an integration event, usually one published by another module. Every module's outbox
+    /// processor delivers messages of that type to it, in a scope of its own, as Inbox → Transaction → handler in this
+    /// module's context (ADR-0005, ADR-0014). Its name in the inbox is the handler's full type name.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// <typeparamref name="THandler"/> is already registered for <typeparamref name="TEvent"/>.
+    /// </exception>
+    public ModuleHandlerRegistrar<TContext> AddIntegrationEventHandler<TEvent, THandler>()
+        where TEvent : IIntegrationEvent
+        where THandler : class, IIntegrationEventHandler<TEvent>
+    {
+        var consumer = IntegrationEventConsumer.For<TContext, TEvent, THandler>(PipelineKey);
+
+        // Registered twice, it would share one inbox record, so the second would never run; it is surely a mistake.
+        var duplicate = _services
+            .Where(descriptor => descriptor.ServiceType == typeof(IntegrationEventConsumer))
+            .Select(descriptor => descriptor.ImplementationInstance)
+            .OfType<IntegrationEventConsumer>()
+            .Any(registered => registered.EventType == consumer.EventType && registered.Name == consumer.Name);
+        if (duplicate)
+        {
+            throw new InvalidOperationException(
+                $"{typeof(THandler).Name} is already registered as a consumer of {consumer.EventType}.");
+        }
+
+        _services.TryAddKeyedScoped<THandler>(PipelineKey);
+        _services.AddSingleton(consumer);
+
+        return this;
+    }
+
     private static IUnitOfWork UnitOfWork(IServiceProvider provider) =>
         provider.GetRequiredKeyedService<IUnitOfWork>(UnitOfWorkKey);
 
@@ -266,8 +300,9 @@ internal sealed class RegisteredHandlers
     /// <summary>
     /// The commands and events with a handler in <paramref name="services"/> that no registrar put there. Command
     /// pipelines are compared by reference, so a direct registration is found even when the registrar handles the same
-    /// command. The registrar never registers an <see cref="IDomainEventHandler{TEvent}"/> as such (only the handler
-    /// class, under its private key), so every one in the container was registered directly.
+    /// command. The registrar never registers an <see cref="IDomainEventHandler{TEvent}"/> or
+    /// <see cref="IIntegrationEventHandler{TEvent}"/> as such (only the handler class, under its private key), so every
+    /// one in the container was registered directly.
     /// </summary>
     public static IReadOnlyList<Type> HandledDirectly(IServiceCollection services)
     {
@@ -299,6 +334,7 @@ internal sealed class RegisteredHandlers
         var definition = serviceType.GetGenericTypeDefinition();
         return definition == typeof(ICommandHandler<>)
             || definition == typeof(ICommandHandler<,>)
-            || definition == typeof(IDomainEventHandler<>);
+            || definition == typeof(IDomainEventHandler<>)
+            || definition == typeof(IIntegrationEventHandler<>);
     }
 }

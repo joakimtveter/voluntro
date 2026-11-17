@@ -51,10 +51,40 @@ internal sealed class OutboxMessage
             TraceParent = Activity.Current?.Id,
         };
 
+    /// <summary>The longest wait between two attempts.</summary>
+    public static readonly TimeSpan MaxBackoff = TimeSpan.FromMinutes(5);
+
     /// <summary>Stamps a new message with the time its command is saved; it is due straight away.</summary>
     public void Stamp(DateTimeOffset now)
     {
         OccurredAt = now;
         NextAttemptAt = now;
     }
+
+    /// <summary>Every consumer has handled it.</summary>
+    public void MarkProcessed(DateTimeOffset now) => ProcessedAt = now;
+
+    /// <summary>
+    /// Counts a failed attempt. After <paramref name="maxAttempts"/> the message is failed and never retried; before
+    /// that it is due again after <see cref="Backoff"/>.
+    /// </summary>
+    /// <returns>True when this attempt was the last one and the message is now failed.</returns>
+    public bool RecordFailedAttempt(DateTimeOffset now, int maxAttempts)
+    {
+        Attempts++;
+        if (Attempts >= maxAttempts)
+        {
+            FailedAt = now;
+            return true;
+        }
+
+        NextAttemptAt = now + Backoff(Attempts);
+        return false;
+    }
+
+    /// <summary>
+    /// How long to wait after the given number of failed attempts: 2, 4, 8 … seconds, at most <see cref="MaxBackoff"/>.
+    /// </summary>
+    public static TimeSpan Backoff(int attempts) =>
+        TimeSpan.FromSeconds(Math.Min(Math.Pow(2, attempts), MaxBackoff.TotalSeconds));
 }

@@ -65,7 +65,7 @@ public static class ModuleServiceCollectionExtensions
             throw new InvalidOperationException(
                 $"After registering module '{module.Key}', the handlers for these commands or events are registered " +
                 $"directly in the container: {string.Join(", ", direct.Select(message => message.Name))}. A command " +
-                "handler would run without the command pipeline, so nothing would save its changes, and a domain event " +
+                "handler would run without the command pipeline, so nothing would save its changes, and an event " +
                 "handler would never be called. Register them with AddHandlers<TContext>() instead.");
         }
     }

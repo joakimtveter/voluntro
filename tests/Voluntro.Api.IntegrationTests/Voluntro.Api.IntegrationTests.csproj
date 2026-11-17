@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="xunit.v3.mtp-v2" />
     <!-- For dotnet ef (the sample module's migrations live in this project); not referenced by the code. -->
@@ -29,6 +30,9 @@
     <ProjectReference Include="..\..\src\BuildingBlocks\Voluntro.BuildingBlocks.Contracts\Voluntro.BuildingBlocks.Contracts.csproj" />
     <ProjectReference Include="..\..\src\BuildingBlocks\Voluntro.BuildingBlocks.Application\Voluntro.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\..\src\BuildingBlocks\Voluntro.BuildingBlocks.Infrastructure\Voluntro.BuildingBlocks.Infrastructure.csproj" />
+    <!-- The sample module's Contracts, and the second test-only module that consumes its events. -->
+    <ProjectReference Include="..\Voluntro.Api.IntegrationTests.SampleContracts\Voluntro.Api.IntegrationTests.SampleContracts.csproj" />
+    <ProjectReference Include="..\Voluntro.Api.IntegrationTests.Inbound\Voluntro.Api.IntegrationTests.Inbound.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,14 +3,17 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Voluntro.Api.IntegrationTests.Database;
+using Voluntro.Api.IntegrationTests.Inbound;
 using Voluntro.Api.IntegrationTests.Sample;
 using Voluntro.BuildingBlocks.Infrastructure;
+using Voluntro.BuildingBlocks.Infrastructure.Outbox;
 
 namespace Voluntro.Api.IntegrationTests;
 
 /// <summary>
-/// Hosts Voluntro.Api in memory, with the test-only <see cref="SampleModule"/> registered
-/// through the same <c>AddModule</c> path that <c>Program.cs</c> uses for real modules.
+/// Hosts Voluntro.Api in memory, with the test-only <see cref="SampleModule"/> and <see cref="InboundModule"/>
+/// registered through the same <c>AddModule</c> path that <c>Program.cs</c> uses for real modules. The outbox isn't
+/// delivered in the background; tests call the processors themselves.
 /// </summary>
 public sealed class VoluntroApiFactory : WebApplicationFactory<Program>
 {
@@ -34,6 +37,14 @@ public sealed class VoluntroApiFactory : WebApplicationFactory<Program>
 
         // Runs after Program.cs has registered its own services.
         builder.ConfigureServices((context, services) =>
-            services.AddModule(new SampleModule(), context.Configuration));
+        {
+            services.AddModule(new SampleModule(), context.Configuration);
+            services.AddModule(new InboundModule(), context.Configuration);
+
+            // Tests deliver the outbox themselves, by calling a module's OutboxProcessor<TContext>.ProcessPendingAsync,
+            // so nothing is delivered behind a test's back. Everything else about outbox processing stays registered.
+            var processing = services.Single(descriptor => descriptor.ImplementationType == typeof(OutboxProcessingService));
+            services.Remove(processing);
+        });
     }
 }

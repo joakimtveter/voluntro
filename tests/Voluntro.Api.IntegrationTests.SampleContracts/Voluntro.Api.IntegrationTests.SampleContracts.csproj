@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The test-only sample module's Contracts: what another module (the inbound module) may reference of it.
+       Separate from the test project so the inbound module can consume its events without referencing the tests. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BuildingBlocks\Voluntro.BuildingBlocks.Contracts\Voluntro.BuildingBlocks.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

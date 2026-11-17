@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Voluntro.Api.IntegrationTests.Sample;
 using Voluntro.Api.IntegrationTests.Sample.Persistence;
 using Voluntro.BuildingBlocks.Application;
+using Voluntro.BuildingBlocks.Contracts;
 using Voluntro.BuildingBlocks.Infrastructure;
 using Voluntro.SharedKernel;
 
@@ -97,7 +98,38 @@ public sealed class AddModuleTests
         new ServiceCollection().AddModule(module, EmptyConfig);
     }
 
+    // The outbox processors call only the consumers the registrar recorded, so this one would never be called.
+    [Fact]
+    public void An_integration_event_handler_registered_without_the_registrar_is_rejected()
+    {
+        var module = new RegisteringModule(services =>
+            services.AddScoped<IIntegrationEventHandler<BareShipped>, BareShippedHandler>());
+
+        var error = Assert.Throws<InvalidOperationException>(() => new ServiceCollection().AddModule(module, EmptyConfig));
+        Assert.Contains(nameof(BareShipped), error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Integration_event_handlers_registered_through_the_registrar_are_accepted()
+    {
+        var module = new RegisteringModule(services =>
+            services.AddHandlers<SampleDbContext>().AddIntegrationEventHandler<BareShipped, BareShippedHandler>());
+
+        new ServiceCollection().AddModule(module, EmptyConfig);
+    }
+
     private sealed record Bare;
+
+    private sealed record BareShipped : IIntegrationEvent
+    {
+        public static string EventType => "registering.bare_shipped.v1";
+    }
+
+    private sealed class BareShippedHandler : IIntegrationEventHandler<BareShipped>
+    {
+        public Task<Result> HandleAsync(BareShipped integrationEvent, CancellationToken cancellationToken) =>
+            Task.FromResult(Result.Success());
+    }
 
     private sealed record BareHappened : IDomainEvent;
 

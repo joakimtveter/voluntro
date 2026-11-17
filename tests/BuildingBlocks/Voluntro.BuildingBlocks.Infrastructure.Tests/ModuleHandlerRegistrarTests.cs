@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Voluntro.BuildingBlocks.Application;
+using Voluntro.BuildingBlocks.Contracts;
 using Voluntro.BuildingBlocks.Infrastructure.Persistence;
 using Voluntro.SharedKernel;
 
@@ -238,6 +239,47 @@ public sealed class ModuleHandlerRegistrarTests
         Assert.Contains(nameof(INotRegistered), exception.Message, StringComparison.Ordinal);
     }
 
+    // Only the outbox processors call a consumer, through its inbox; nothing else can resolve one.
+    [Fact]
+    public void An_integration_event_handler_is_not_registered_as_such()
+    {
+        using var provider = Build(handlers => handlers.AddIntegrationEventHandler<Shipped, ShippedHandler>());
+        using var scope = provider.CreateScope();
+
+        Assert.Null(scope.ServiceProvider.GetService<IIntegrationEventHandler<Shipped>>());
+        Assert.Null(scope.ServiceProvider.GetService<ShippedHandler>());
+    }
+
+    // Both would share one inbox record, so the second would never run.
+    [Fact]
+    public void Registering_the_same_integration_event_handler_twice_throws()
+    {
+        var services = new ServiceCollection();
+        services.AddHandlers<PingDbContext>().AddIntegrationEventHandler<Shipped, ShippedHandler>();
+
+        Assert.Throws<InvalidOperationException>(() =>
+            services.AddHandlers<PingDbContext>().AddIntegrationEventHandler<Shipped, ShippedHandler>());
+    }
+
+    [Fact]
+    public void Two_consumers_of_one_integration_event_can_be_registered()
+    {
+        using var provider = Build(handlers => handlers
+            .AddIntegrationEventHandler<Shipped, ShippedHandler>()
+            .AddIntegrationEventHandler<Shipped, AlsoShippedHandler>());
+
+        Assert.NotNull(provider);
+    }
+
+    [Fact]
+    public void An_integration_event_handler_whose_dependency_is_not_registered_fails_when_the_container_is_validated()
+    {
+        var exception = Assert.Throws<AggregateException>(() =>
+            Build(handlers => handlers.AddIntegrationEventHandler<Shipped, NeedyShippedHandler>()));
+
+        Assert.Contains(nameof(INotRegistered), exception.Message, StringComparison.Ordinal);
+    }
+
     private static ServiceProvider Build(
         Action<ModuleHandlerRegistrar<PingDbContext>> register,
         Action<IServiceCollection>? configure = null)
@@ -254,6 +296,31 @@ public sealed class ModuleHandlerRegistrarTests
     private sealed record Poke;
 
     private sealed record Pinged : IDomainEvent;
+
+    private sealed record Shipped : IIntegrationEvent
+    {
+        public static string EventType => "ping.shipped.v1";
+    }
+
+    private sealed class ShippedHandler : IIntegrationEventHandler<Shipped>
+    {
+        public Task<Result> HandleAsync(Shipped integrationEvent, CancellationToken cancellationToken) =>
+            Task.FromResult(Result.Success());
+    }
+
+    private sealed class AlsoShippedHandler : IIntegrationEventHandler<Shipped>
+    {
+        public Task<Result> HandleAsync(Shipped integrationEvent, CancellationToken cancellationToken) =>
+            Task.FromResult(Result.Success());
+    }
+
+    private sealed class NeedyShippedHandler(INotRegistered dependency) : IIntegrationEventHandler<Shipped>
+    {
+        public INotRegistered Dependency { get; } = dependency;
+
+        public Task<Result> HandleAsync(Shipped integrationEvent, CancellationToken cancellationToken) =>
+            Task.FromResult(Result.Success());
+    }
 
     private sealed class PingedHandler : IDomainEventHandler<Pinged>
     {
