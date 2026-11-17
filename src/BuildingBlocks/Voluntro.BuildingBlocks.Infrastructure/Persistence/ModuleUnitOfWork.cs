@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Voluntro.BuildingBlocks.Application;
-using Voluntro.BuildingBlocks.Infrastructure.Outbox;
 using Voluntro.SharedKernel;
 
 namespace Voluntro.BuildingBlocks.Infrastructure.Persistence;
@@ -11,19 +10,17 @@ namespace Voluntro.BuildingBlocks.Infrastructure.Persistence;
 /// <summary>
 /// A module's <see cref="IUnitOfWork"/>: the one place a command's changes are saved (ADR-0012). Before the save it
 /// runs the handlers of the domain events the tracked aggregates have raised, round after round while handlers raise
-/// more (ADR-0013). Then it stamps the outbox messages they and the command published with the time of the save.
-/// Everything is saved together, and the audit interceptor stamps every aggregate that changed.
+/// more (ADR-0013). Everything is saved together, and the audit interceptor stamps every aggregate that changed and
+/// every outbox message the handlers and the command published.
 /// </summary>
 /// <remarks>
 /// Registered by the handler registrar as the module's <see cref="IUnitOfWork"/>, keyed by the context type. A direct
-/// <c>SaveChangesAsync</c> on the context dispatches and stamps nothing: the pipeline is the only supported way to
-/// save. A DbContext can't do this itself: it is built from its options alone and can't see the scope's handlers or
-/// clock.
+/// <c>SaveChangesAsync</c> on the context dispatches nothing: the pipeline is the only supported way to save. A
+/// DbContext can't do this itself: it is built from its options alone and can't see the scope's handlers.
 /// </remarks>
 internal sealed class ModuleUnitOfWork<TContext>(
     TContext context,
     DomainEventHandlers<TContext> domainEventHandlers,
-    TimeProvider timeProvider,
     IServiceProvider services) : IUnitOfWork
     where TContext : ModuleDbContext
 {
@@ -40,8 +37,6 @@ internal sealed class ModuleUnitOfWork<TContext>(
         {
             return dispatched;
         }
-
-        StampNewOutboxMessages();
 
         try
         {
@@ -121,19 +116,6 @@ internal sealed class ModuleUnitOfWork<TContext>(
         }
 
         return domainEvents;
-    }
-
-    // After dispatch, so events published by domain event handlers are stamped too.
-    private void StampNewOutboxMessages()
-    {
-        var now = timeProvider.GetUtcNow();
-        foreach (var entry in context.ChangeTracker.Entries<OutboxMessage>())
-        {
-            if (entry.State == EntityState.Added)
-            {
-                entry.Entity.Stamp(now);
-            }
-        }
     }
 
     // "SampleOrder 0193…, SampleOrderLine 0193…": IDs only, never property values.

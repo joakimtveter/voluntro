@@ -45,7 +45,7 @@ public static class HandlerServiceCollectionExtensions
 /// would clash with <c>Add&lt;TCommand, TResponse, THandler&gt;</c>.
 /// The module's <see cref="IUnitOfWork"/> is registered keyed by the context type: tests resolve it with
 /// <c>GetRequiredKeyedService&lt;IUnitOfWork&gt;(typeof(TContext))</c>, or register their own under that key before
-/// calling <c>AddHandlers</c>.
+/// calling <c>AddHandlers</c>, for command handlers only: event handlers then refuse to register.
 /// </remarks>
 public sealed class ModuleHandlerRegistrar<TContext>
     where TContext : ModuleDbContext
@@ -63,17 +63,17 @@ public sealed class ModuleHandlerRegistrar<TContext>
         _registered = RegisteredHandlers.In(services);
         _domainEventHandlers = DomainEventHandlers<TContext>.In(services);
 
-        // Keyed by the context type, so each module saves through its own context. TryAdd: calling AddHandlers twice
-        // for one context keeps one unit of work, and a test can register its own under the key first.
-        // AddModuleDbContext adds the same clock; added here too, so the unit of work never lacks one.
+        // AddModuleDbContext adds the same clock; added here too, so consumers can always stamp their inbox records.
         services.TryAddSingleton(TimeProvider.System);
+
+        // Keyed by the context type, so each module saves through its own context. TryAdd: calling AddHandlers twice
+        // for one context keeps one unit of work, and a test can register its own under the key first (for command
+        // handlers only: see EnsureOwnUnitOfWork). Recorded, so that event handlers can tell it from a test's.
         var domainEventHandlers = _domainEventHandlers;
-        services.TryAddKeyedScoped<IUnitOfWork>(UnitOfWorkKey, (provider, _) =>
-            new ModuleUnitOfWork<TContext>(
-                provider.GetRequiredService<TContext>(),
-                domainEventHandlers,
-                provider.GetRequiredService<TimeProvider>(),
-                provider));
+        var unitOfWork = ServiceDescriptor.KeyedScoped<IUnitOfWork>(UnitOfWorkKey, (provider, _) =>
+            new ModuleUnitOfWork<TContext>(provider.GetRequiredService<TContext>(), domainEventHandlers, provider));
+        services.TryAdd(unitOfWork);
+        _registered.Add(unitOfWork);
     }
 
     // The key the module's IUnitOfWork is registered under: the context type. Tests resolve it with
@@ -173,12 +173,15 @@ public sealed class ModuleHandlerRegistrar<TContext>
     /// before the save, after any handlers registered earlier for the same event (ADR-0013).
     /// </summary>
     /// <exception cref="InvalidOperationException">
-    /// <typeparamref name="TEvent"/> isn't sealed, or <typeparamref name="THandler"/> is already registered for it.
+    /// <typeparamref name="TEvent"/> isn't sealed, <typeparamref name="THandler"/> is already registered for it, or
+    /// another <see cref="IUnitOfWork"/> was registered for <typeparamref name="TContext"/> before this registrar's.
     /// </exception>
     public ModuleHandlerRegistrar<TContext> AddDomainEventHandler<TEvent, THandler>()
         where TEvent : IDomainEvent
         where THandler : class, IDomainEventHandler<TEvent>
     {
+        EnsureOwnUnitOfWork<THandler>();
+
         // The unit of work finds handlers by the raised event's exact type, so a handler for an interface or a base
         // record would never run.
         if (!typeof(TEvent).IsSealed)
@@ -204,12 +207,15 @@ public sealed class ModuleHandlerRegistrar<TContext>
     /// module's context (ADR-0005, ADR-0014). Its name in the inbox is the handler's full type name.
     /// </summary>
     /// <exception cref="InvalidOperationException">
-    /// <typeparamref name="THandler"/> is already registered for <typeparamref name="TEvent"/>.
+    /// <typeparamref name="THandler"/> is already registered for <typeparamref name="TEvent"/>, or another
+    /// <see cref="IUnitOfWork"/> was registered for <typeparamref name="TContext"/> before this registrar's.
     /// </exception>
     public ModuleHandlerRegistrar<TContext> AddIntegrationEventHandler<TEvent, THandler>()
         where TEvent : IIntegrationEvent
         where THandler : class, IIntegrationEventHandler<TEvent>
     {
+        EnsureOwnUnitOfWork<THandler>();
+
         var consumer = IntegrationEventConsumer.For<TContext, TEvent, THandler>(PipelineKey);
 
         // Registered twice, it would share one inbox record, so the second would never run; it is surely a mistake.
@@ -240,6 +246,25 @@ public sealed class ModuleHandlerRegistrar<TContext>
         var registration = ServiceDescriptor.Scoped(pipeline);
         _services.Add(registration);
         _registered.Add(registration);
+    }
+
+    // Event handlers run only through the registrar's unit of work: it dispatches domain events, and it saves a
+    // consumer's changes with its inbox record. Another one registered under the context's key first (a test's fake,
+    // which TryAdd keeps) would leave a domain event handler never called, and a consumer's work never saved.
+    private void EnsureOwnUnitOfWork<THandler>()
+    {
+        var unitOfWork = _services.LastOrDefault(descriptor =>
+            descriptor.ServiceType == typeof(IUnitOfWork)
+            && descriptor.IsKeyedService
+            && Equals(descriptor.ServiceKey, UnitOfWorkKey));
+
+        if (unitOfWork is null || !_registered.Contains(unitOfWork))
+        {
+            throw new InvalidOperationException(
+                $"{typeof(THandler).Name} can't be registered: the IUnitOfWork for {typeof(TContext).Name} isn't the one " +
+                "AddHandlers registers, so the handler would never run or its changes would never be saved. A unit of " +
+                "work of your own works for command handlers only.");
+        }
     }
 
     // A second registration would silently win over the first.
@@ -284,8 +309,9 @@ public sealed class ModuleHandlerRegistrar<TContext>
 }
 
 /// <summary>
-/// The command pipelines registered by a <see cref="ModuleHandlerRegistrar{TContext}"/>. One instance is kept in the
-/// service collection, so that <c>AddModule</c> can refuse a handler registered any other way.
+/// The command pipelines and units of work registered by a <see cref="ModuleHandlerRegistrar{TContext}"/>. One instance
+/// is kept in the service collection, so that <c>AddModule</c> can refuse a handler registered any other way, and
+/// event handlers can refuse a unit of work that isn't the registrar's.
 /// </summary>
 internal sealed class RegisteredHandlers
 {
@@ -305,6 +331,8 @@ internal sealed class RegisteredHandlers
     }
 
     public void Add(ServiceDescriptor registration) => _registrations.Add(registration);
+
+    public bool Contains(ServiceDescriptor registration) => _registrations.Contains(registration);
 
     /// <summary>
     /// The commands and events with a handler in <paramref name="services"/> that no registrar put there. Command

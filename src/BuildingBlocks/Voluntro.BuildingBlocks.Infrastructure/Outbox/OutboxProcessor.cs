@@ -63,16 +63,18 @@ public sealed class OutboxProcessor<TContext> : IOutboxProcessor
     {
         var batchSize = _options.Value.BatchSize;
 
-        // Ends: every message read is either processed, failed, or due again only after a backoff, so the next query
-        // doesn't return it.
+        // Only what is due when the call starts. A failed message is due again a backoff after its attempt, so later
+        // than this, and the next query can't return it, however long the batches take. That is also why the loop
+        // ends: every message read is processed, failed or pushed past this point, and new ones wait for the next call.
+        var dueBy = _timeProvider.GetUtcNow();
+
         while (true)
         {
             await using var scope = _scopes.CreateAsyncScope();
             var context = scope.ServiceProvider.GetRequiredService<TContext>();
-            var now = _timeProvider.GetUtcNow();
 
             var due = await context.Set<OutboxMessage>()
-                .Where(message => message.ProcessedAt == null && message.FailedAt == null && message.NextAttemptAt <= now)
+                .Where(message => message.ProcessedAt == null && message.FailedAt == null && message.NextAttemptAt <= dueBy)
                 .OrderBy(message => message.OccurredAt)
                 .ThenBy(message => message.Id)
                 .Take(batchSize)

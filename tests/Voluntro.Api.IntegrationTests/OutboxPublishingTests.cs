@@ -6,6 +6,7 @@ using Voluntro.Api.IntegrationTests.Database;
 using Voluntro.Api.IntegrationTests.Sample;
 using Voluntro.Api.IntegrationTests.Sample.Contracts;
 using Voluntro.Api.IntegrationTests.Sample.Persistence;
+using Voluntro.BuildingBlocks.Application;
 
 namespace Voluntro.Api.IntegrationTests;
 
@@ -45,6 +46,27 @@ public sealed class OutboxPublishingTests(PostgresDatabase database) : DatabaseT
         using var payload = JsonDocument.Parse(message.Payload);
         Assert.Equal(order.Id.Value, payload.RootElement.GetProperty("orderId").GetGuid());
         Assert.Equal("Kari Nordmann", payload.RootElement.GetProperty("customerName").GetString());
+    }
+
+    // The pipeline is the supported way to save, but a direct save (a test, a hand-written job) must not write a
+    // message with no time: the audit interceptor stamps it, in every save.
+    [Fact]
+    public async Task A_message_saved_directly_on_the_context_is_stamped_too()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var before = DateTimeOffset.UtcNow;
+
+        await using (var scope = CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<SampleDbContext>();
+            ((IOutbox)context).Add(new OrderPlaced(Guid.CreateVersion7(), "Kari Nordmann"));
+            await context.SaveChangesAsync(ct);
+        }
+
+        var after = DateTimeOffset.UtcNow;
+        var message = Assert.Single(await ReadOutboxAsync());
+        Assert.InRange(message.OccurredAt, before - Precision, after + Precision);
+        Assert.Equal(message.OccurredAt, message.NextAttemptAt);
     }
 
     // Acceptance criterion: if the originating transaction rolls back, no integration event is published. The event

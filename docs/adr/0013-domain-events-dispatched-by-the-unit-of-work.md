@@ -12,7 +12,7 @@ We chose the unit of work over a `SavingChanges` interceptor. In the unit of wor
 
 ## Consequences
 
-- A direct `context.SaveChangesAsync()` (a test, a hand-written background job) dispatches nothing. The pipeline, through `IUnitOfWork`, is the only supported way to save. The outbox processor's consumer saves go through it too, so a consumer's own domain events are dispatched.
+- A direct `context.SaveChangesAsync()` (a test, a hand-written background job) dispatches nothing. The pipeline, through `IUnitOfWork`, is the only supported way to save. New outbox rows are still stamped with their time: the audit interceptor does that in every save, not the unit of work. The outbox processor's consumer saves go through it too, so a consumer's own domain events are dispatched.
 - A failed `Result` from a domain event handler stops the round: later handlers don't run, nothing is saved, and the transaction decorator discards the changes and returns the failure. So a handler can veto a command.
 - Handlers are matched on the raised event's exact type, so the registrar refuses an event type that isn't sealed: a handler for an interface or a base record would never run.
 - Several handlers for one event run in registration order. Events in one round run in the order they were raised, but across aggregates in the order the change tracker returns them, which is not guaranteed. Handlers must not depend on the order of different events.

@@ -26,7 +26,7 @@ internal sealed class OutboxMessage
     /// </summary>
     public string? TraceParent { get; init; }
 
-    /// <summary>When the publishing command saved (UTC). Stamped by the unit of work, from its <see cref="TimeProvider"/>.</summary>
+    /// <summary>When the publishing command saved (UTC). Stamped by the audit interceptor, from its <see cref="TimeProvider"/>.</summary>
     public DateTimeOffset OccurredAt { get; private set; }
 
     /// <summary>Failed delivery attempts so far.</summary>

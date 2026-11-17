@@ -13,14 +13,13 @@ using Voluntro.SharedKernel;
 namespace Voluntro.BuildingBlocks.Infrastructure.Tests;
 
 /// <summary>
-/// Publishing through a module context's <see cref="IOutbox"/>: the message it adds to the change tracker, the time the
-/// unit of work stamps on it, and the tables every module context maps. No database: the context's save only records.
-/// The message type is internal, so it is read through the change tracker and the model, by property name.
+/// Publishing through a module context's <see cref="IOutbox"/>: the message it adds to the change tracker, and the
+/// tables every module context maps. No database: the context's save only records, so the audit interceptor, which
+/// stamps the message's time, is covered by <c>OutboxPublishingTests</c>. The message type is internal, so it is read
+/// through the change tracker and the model, by property name.
 /// </summary>
 public sealed class OutboxTests
 {
-    private static readonly DateTimeOffset Now = new(2026, 11, 17, 12, 0, 0, TimeSpan.Zero);
-
     [Fact]
     public void A_published_event_is_added_as_an_outbox_message_with_its_type()
     {
@@ -84,28 +83,10 @@ public sealed class OutboxTests
         Assert.StartsWith($"00-{activity.TraceId}-", traceParent, StringComparison.Ordinal);
     }
 
+    // The most common way to publish: a domain event handler reacting to the command's change. Its message is in the
+    // tracker before the one save, so it commits with the change.
     [Fact]
-    public async Task The_unit_of_work_stamps_new_messages_with_the_time_of_the_save()
-    {
-        using var provider = Build();
-        using var scope = provider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<OutboxDbContext>();
-        ((IOutbox)context).Add(new Happened(Guid.Empty, "Kari", Mood.VeryHappy));
-
-        var result = await UnitOfWork(scope).SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        Assert.True(result.IsSuccess);
-        var message = Assert.Single(context.ChangeTracker.Entries());
-        Assert.Equal(Now, message.Property("OccurredAt").CurrentValue);
-        Assert.Equal(Now, message.Property("NextAttemptAt").CurrentValue);
-        Assert.Equal(0, message.Property("Attempts").CurrentValue);
-        Assert.Null(message.Property("ProcessedAt").CurrentValue);
-        Assert.Null(message.Property("FailedAt").CurrentValue);
-    }
-
-    // The most common way to publish: a domain event handler reacting to the command's change.
-    [Fact]
-    public async Task An_event_published_by_a_domain_event_handler_is_stamped_too()
+    public async Task An_event_published_by_a_domain_event_handler_is_saved_with_the_command()
     {
         using var provider = Build(handlers => handlers.AddDomainEventHandler<Noticed, PublishingHandler>());
         using var scope = provider.CreateScope();
@@ -118,12 +99,13 @@ public sealed class OutboxTests
 
         var message = Assert.Single(OutboxEntries(context));
         Assert.Equal(Happened.EventType, message.Property("Type").CurrentValue);
-        Assert.Equal(Now, message.Property("OccurredAt").CurrentValue);
+        Assert.Equal(EntityState.Added, message.State);
+        Assert.Equal(["save"], context.Saves);
     }
 
     // An event published before a failure is discarded with the rest of the command (TransactionDecorator).
     [Fact]
-    public async Task A_failed_dispatch_saves_and_stamps_nothing()
+    public async Task A_failed_dispatch_saves_nothing()
     {
         using var provider = Build(handlers => handlers
             .AddDomainEventHandler<Noticed, PublishingHandler>()
@@ -138,7 +120,6 @@ public sealed class OutboxTests
 
         Assert.True(result.IsFailure);
         Assert.Empty(context.Saves);
-        Assert.Equal(default(DateTimeOffset), Assert.Single(OutboxEntries(context)).Property("OccurredAt").CurrentValue);
     }
 
     [Fact]
@@ -189,7 +170,6 @@ public sealed class OutboxTests
     private static ServiceProvider Build(Action<ModuleHandlerRegistrar<OutboxDbContext>>? register = null)
     {
         var services = new ServiceCollection();
-        services.AddSingleton<TimeProvider>(new FixedTimeProvider(Now));
         services.AddDbContext<OutboxDbContext>(options => options.UseNpgsql("Host=never-connected"));
         var handlers = services.AddHandlers<OutboxDbContext>();
         register?.Invoke(handlers);
@@ -242,11 +222,6 @@ public sealed class OutboxTests
         }
 
         public void Notice() => Raise(new Noticed());
-    }
-
-    private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => now;
     }
 
     /// <summary>A module context whose save records instead of reaching a database.</summary>

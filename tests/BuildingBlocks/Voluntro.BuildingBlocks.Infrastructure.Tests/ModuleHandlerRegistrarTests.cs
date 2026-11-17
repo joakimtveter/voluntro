@@ -241,6 +241,29 @@ public sealed class ModuleHandlerRegistrarTests
         Assert.Contains(nameof(Moved), exception.Message, StringComparison.Ordinal);
     }
 
+    // A test's own unit of work, registered first, wins over the registrar's. It's fine for command handlers, but it
+    // would never dispatch a domain event or save a consumer's inbox record.
+    [Fact]
+    public void An_event_handler_throws_when_another_unit_of_work_was_registered_for_the_context()
+    {
+        var services = new ServiceCollection();
+        services.AddKeyedScoped<IUnitOfWork, StandInUnitOfWork>(typeof(PingDbContext));
+        var handlers = services.AddHandlers<PingDbContext>().Add<Poke, PokeHandler>();
+
+        Assert.Throws<InvalidOperationException>(() => handlers.AddDomainEventHandler<Pinged, PingedHandler>());
+        Assert.Throws<InvalidOperationException>(() => handlers.AddIntegrationEventHandler<Shipped, ShippedHandler>());
+    }
+
+    // The second registrar finds the first one's unit of work, not a stranger's.
+    [Fact]
+    public void An_event_handler_can_be_registered_through_a_second_registrar_for_the_context()
+    {
+        var services = new ServiceCollection();
+        services.AddHandlers<PingDbContext>().AddDomainEventHandler<Pinged, PingedHandler>();
+
+        services.AddHandlers<PingDbContext>().AddIntegrationEventHandler<Shipped, ShippedHandler>();
+    }
+
     [Fact]
     public void A_domain_event_handler_whose_dependency_is_not_registered_fails_when_the_container_is_validated()
     {
@@ -341,6 +364,15 @@ public sealed class ModuleHandlerRegistrarTests
     {
         public Task<Result> HandleAsync(Pinged domainEvent, CancellationToken cancellationToken) =>
             Task.FromResult(Result.Success());
+    }
+
+    private sealed class StandInUnitOfWork : IUnitOfWork
+    {
+        public Task<Result> SaveChangesAsync(CancellationToken cancellationToken) => Task.FromResult(Result.Success());
+
+        public void DiscardChanges()
+        {
+        }
     }
 
     private sealed class MovedHandler : IDomainEventHandler<Moved>

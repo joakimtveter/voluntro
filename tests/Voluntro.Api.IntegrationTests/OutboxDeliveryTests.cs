@@ -133,6 +133,39 @@ public sealed class OutboxDeliveryTests(PostgresDatabase database) : DatabaseTes
         Assert.Single(await ReadReceivedOrdersAsync());
     }
 
+    // Batches of one stay full, so the processor keeps reading, and the clock moves a minute on every reading: far more
+    // than the first backoff of 2 s. Only what was due when the call started is delivered, so the failed message
+    // waits for the next call instead of being retried at once.
+    [Fact]
+    public async Task A_failed_message_waits_out_its_backoff_even_when_delivery_takes_longer()
+    {
+        var clock = NewClock();
+        using var api = WithClock(Api, clock, builder => builder.UseSetting("Outbox:BatchSize", "1"));
+        await PlaceOrderAsync(api, InboundFlags.Refuse);
+        clock.AutoAdvanceAmount = TimeSpan.FromMinutes(1);
+
+        await ProcessAsync(api);
+
+        clock.AutoAdvanceAmount = TimeSpan.Zero;
+        Assert.Equal(1, Assert.Single(await ReadOutboxAsync()).Attempts);
+    }
+
+    // Background work acts as System (ICurrentUser), so what a consumer creates is stamped as System's, not as the
+    // user's whose request published the message. The consumer runs under the Api's own ICurrentUser registration:
+    // when Identity replaces it with one that reads the request, this checks that it falls back to System.
+    [Fact]
+    public async Task A_consumer_acts_as_the_system_user()
+    {
+        using var signedIn = Api.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.AddScoped<ICurrentUser>(_ => new FixedUser(Guid.CreateVersion7()))));
+        await PlaceOrderAsync(signedIn, "Kari Nordmann");
+
+        await ProcessAsync(Api);
+
+        var received = Assert.Single(await ReadReceivedOrdersAsync());
+        Assert.Equal(SystemUser.Id, received.CreatedBy);
+    }
+
     [Fact]
     public async Task The_backoff_doubles_up_to_five_minutes_and_the_message_fails_after_ten_attempts()
     {
@@ -367,6 +400,11 @@ public sealed class OutboxDeliveryTests(PostgresDatabase database) : DatabaseTes
     private sealed record NobodyListens : IIntegrationEvent
     {
         public static string EventType => "sample.nobody_listens.v1";
+    }
+
+    private sealed class FixedUser(Guid userId) : ICurrentUser
+    {
+        public Guid UserId => userId;
     }
 
     private sealed record LogEntry(LogLevel Level, string Message, Exception? Exception);
