@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using Voluntro.Api.Options;
 using Voluntro.BuildingBlocks.Infrastructure;
+using Voluntro.BuildingBlocks.Infrastructure.Outbox;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,10 @@ builder.Services.AddApiProblemDetails();
 
 // Every module is listed here explicitly. Platform, Identity, ... are added as they are built.
 builder.AddModules();
+
+// Delivers every module's outbox in the background. The API only: the MigrationService registers the same modules but
+// must never deliver anything.
+builder.Services.AddOutboxProcessing();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();

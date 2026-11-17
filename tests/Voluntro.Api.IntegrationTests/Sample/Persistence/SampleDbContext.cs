@@ -11,6 +11,8 @@ public sealed class SampleDbContext(DbContextOptions<SampleDbContext> options) :
 {
     public DbSet<SampleOrder> Orders => Set<SampleOrder>();
 
+    public DbSet<SampleCustomer> Customers => Set<SampleCustomer>();
+
     protected override string Schema => SampleModule.ModuleKey;
 
     protected override void ConfigureModel(ModelBuilder modelBuilder) =>

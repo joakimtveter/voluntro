@@ -28,8 +28,8 @@ public static class ModuleServiceCollectionExtensions
     /// The one way a module is added, used by <c>Program.cs</c> and by the integration-test harness alike.
     /// </summary>
     /// <exception cref="InvalidOperationException">
-    /// A module with the same key, or another module in the same assembly, is already registered; or a command handler
-    /// is registered without <c>AddCommandHandlers</c>.
+    /// A module with the same key, or another module in the same assembly, is already registered; or a command or
+    /// domain event handler is registered without <c>AddHandlers</c>.
     /// </exception>
     public static IServiceCollection AddModule(this IServiceCollection services, IModule module, IConfiguration config)
     {
@@ -41,7 +41,7 @@ public static class ModuleServiceCollectionExtensions
 
         // 1. The module registers its own services (handlers, later its DbContext, consumers, ...).
         module.Register(services, config);
-        EnsureCommandHandlersArePipelined(services, module);
+        EnsureHandlersCameFromTheRegistrar(services, module);
 
         // 2. Make the module itself available, e.g. to the module gate and GET /api/platform/modules.
         //    Registered as IModule (not as its concrete type) so IEnumerable<IModule> lists them all.
@@ -54,17 +54,19 @@ public static class ModuleServiceCollectionExtensions
         return services;
     }
 
-    // Handlers never save (ADR-0012): one registered without the registrar's pipeline would answer success and
-    // persist nothing.
-    private static void EnsureCommandHandlersArePipelined(IServiceCollection services, IModule module)
+    // Handlers never save (ADR-0012): a command handler registered without the registrar's pipeline would answer
+    // success and persist nothing. A domain event handler registered directly would never be called: the unit of work
+    // only runs the ones the registrar recorded (ADR-0013).
+    private static void EnsureHandlersCameFromTheRegistrar(IServiceCollection services, IModule module)
     {
-        var direct = PipelinedCommandHandlers.CommandsRegisteredDirectly(services);
+        var direct = RegisteredHandlers.HandledDirectly(services);
         if (direct.Count > 0)
         {
             throw new InvalidOperationException(
-                $"After registering module '{module.Key}', the handlers for these commands are registered directly in " +
-                $"the container: {string.Join(", ", direct.Select(command => command.Name))}. Without the command " +
-                "pipeline nothing saves their changes. Register them with AddCommandHandlers<TContext>() instead.");
+                $"After registering module '{module.Key}', the handlers for these commands or events are registered " +
+                $"directly in the container: {string.Join(", ", direct.Select(message => message.Name))}. A command " +
+                "handler would run without the command pipeline, so nothing would save its changes, and an event " +
+                "handler would never be called. Register them with AddHandlers<TContext>() instead.");
         }
     }
 

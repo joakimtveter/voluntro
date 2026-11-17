@@ -8,3 +8,4 @@ Modules never share tables. When one module must react to another, the publisher
 - Event names are stable and versioned (`identity.user_registered.v1`). Changing a payload means a new version.
 - Processing starts with polling only; Postgres `LISTEN/NOTIFY` can be added if the latency matters.
 - Processed outbox rows are deleted after ~7 days, because some payloads carry one-time tokens (see ADR-0009).
+- How delivery works (per-message failure state, one API instance, no error text stored) is recorded in ADR-0014. Domain events, which stay inside a module, are dispatched in the publisher's save (ADR-0013); a domain event handler is one of the places that publishes integration events.

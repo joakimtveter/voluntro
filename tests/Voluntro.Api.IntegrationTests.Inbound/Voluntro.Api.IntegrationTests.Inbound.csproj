@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- A second test-only module, "inbound", that consumes the sample module's integration events. A project of its own
+       because AddModule allows one module per assembly; it references only the sample module's Contracts, as a real
+       module would. -->
+
+  <ItemGroup>
+    <!-- For dotnet ef (the module's migrations live here); not referenced by the code. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BuildingBlocks\Voluntro.BuildingBlocks.Infrastructure\Voluntro.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\Voluntro.Api.IntegrationTests.SampleContracts\Voluntro.Api.IntegrationTests.SampleContracts.csproj" />
+  </ItemGroup>
+
+</Project>

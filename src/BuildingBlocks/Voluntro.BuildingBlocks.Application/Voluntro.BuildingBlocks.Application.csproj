@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Voluntro.SharedKernel\Voluntro.SharedKernel.csproj" />
+    <ProjectReference Include="..\Voluntro.BuildingBlocks.Contracts\Voluntro.BuildingBlocks.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

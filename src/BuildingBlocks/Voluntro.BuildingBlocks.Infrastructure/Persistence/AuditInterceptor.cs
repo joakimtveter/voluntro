@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Voluntro.BuildingBlocks.Application;
+using Voluntro.BuildingBlocks.Infrastructure.Outbox;
 using Voluntro.SharedKernel;
 
 namespace Voluntro.BuildingBlocks.Infrastructure.Persistence;
@@ -14,6 +15,7 @@ namespace Voluntro.BuildingBlocks.Infrastructure.Persistence;
 ///   <item>A modified root gets <c>Modified*</c>.</item>
 ///   <item>An added, modified or deleted child entity stamps its root's <c>Modified*</c>. That writes the root's row,
 ///   with its <c>xmin</c> check, so concurrent edits of children are detected like edits of the root (ADR-0011).</item>
+///   <item>A new outbox message gets <c>OccurredAt</c>, and is due at once (<c>NextAttemptAt</c>).</item>
 /// </list>
 /// Added to every module context by <c>AddModuleDbContext</c>.
 /// </summary>
@@ -64,6 +66,13 @@ internal sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider ti
         {
             if (entry.State is not (EntityState.Added or EntityState.Modified or EntityState.Deleted))
             {
+                continue;
+            }
+
+            // Here rather than in the unit of work, so a message is stamped however the save that adds it is made.
+            if (entry is { State: EntityState.Added, Entity: OutboxMessage message })
+            {
+                message.Stamp(now);
                 continue;
             }
 

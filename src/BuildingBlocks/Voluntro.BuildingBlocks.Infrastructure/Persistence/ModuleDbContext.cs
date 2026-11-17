@@ -1,10 +1,8 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Microsoft.Extensions.Logging;
 using Voluntro.BuildingBlocks.Application;
+using Voluntro.BuildingBlocks.Infrastructure.Outbox;
 using Voluntro.SharedKernel;
 
 namespace Voluntro.BuildingBlocks.Infrastructure.Persistence;
@@ -13,46 +11,25 @@ namespace Voluntro.BuildingBlocks.Infrastructure.Persistence;
 /// Base class for every module's DbContext. Everything that shapes the model is set here, in sealed overrides, so the
 /// running app and <c>dotnet ef</c> build the same model and a module's context can't forget to call <c>base</c>:
 /// the module's own schema with its own migrations history, snake_case names, strongly-typed IDs stored as
-/// <c>uuid</c>, enums stored as text, and <see cref="AggregateRoot{TId}.Version"/> on Postgres <c>xmin</c>.
+/// <c>uuid</c>, enums stored as text, <see cref="AggregateRoot{TId}.Version"/> on Postgres <c>xmin</c>, and the
+/// module's <c>outbox</c> and <c>inbox</c> tables.
 /// </summary>
 /// <remarks>
 /// Register a context with <see cref="ModuleDbContextServiceCollectionExtensions.AddModuleDbContext{TContext}"/>,
 /// which only supplies the connection. Migrations are applied by <see cref="ModuleMigrations.MigrateModulesAsync"/>,
-/// never by the API. The context is also the module's <see cref="IUnitOfWork"/>: the transaction decorator saves
-/// or discards a command's changes through it.
+/// never by the API. A command's changes are saved or discarded by the module's unit of work
+/// (<see cref="ModuleUnitOfWork{TContext}"/>), which the handler registrar builds over this context.
+/// The context is also the module's <see cref="IOutbox"/>; the module's narrow interface inherits it.
 /// </remarks>
-public abstract class ModuleDbContext(DbContextOptions options) : DbContext(options), IUnitOfWork
+public abstract class ModuleDbContext(DbContextOptions options) : DbContext(options), IOutbox
 {
-    async Task<Result> IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken)
+    // Explicit, so it doesn't sit next to DbContext.Add(object) on the context itself; handlers reach it through the
+    // module's narrow interface.
+    void IOutbox.Add<TEvent>(TEvent integrationEvent)
     {
-        try
-        {
-            await SaveChangesAsync(cancellationToken);
-            return Result.Success();
-        }
-        catch (DbUpdateConcurrencyException exception)
-        {
-            // Usually a row's xmin no longer matched: someone else saved the aggregate after it was loaded
-            // (ADR-0011). A bug that updates or deletes a row that doesn't exist fails the same way, so the rows are
-            // logged to tell the two apart.
-            var logger = this.GetService<ILoggerFactory>().CreateLogger(GetType());
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                var rows = DescribeRows(exception.Entries);
-                PersistenceLog.ConcurrencyConflict(logger, GetType().Name, rows, exception);
-            }
-
-            return CommonErrors.ConcurrencyConflict;
-        }
+        ArgumentNullException.ThrowIfNull(integrationEvent);
+        Set<OutboxMessage>().Add(OutboxMessage.Create(integrationEvent));
     }
-
-    // "SampleOrder 0193…, SampleOrderLine 0193…": IDs only, never property values.
-    private static string DescribeRows(IEnumerable<EntityEntry> entries) =>
-        string.Join(", ", entries.Select(entry =>
-            $"{entry.Metadata.ClrType.Name} " +
-            string.Join("/", entry.Metadata.FindPrimaryKey()?.Properties.Select(key => entry.Property(key.Name).CurrentValue) ?? [])));
-
-    void IUnitOfWork.DiscardChanges() => ChangeTracker.Clear();
 
     /// <summary>
     /// The module's schema: the same constant its <see cref="IModule.Key"/> returns, e.g. <c>"sample"</c>.
@@ -98,6 +75,10 @@ public abstract class ModuleDbContext(DbContextOptions options) : DbContext(opti
 
         modelBuilder.HasDefaultSchema(Schema);
         ConfigureModel(modelBuilder);
+
+        // Every module gets both, whether it publishes or consumes yet or not.
+        modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());
+        modelBuilder.ApplyConfiguration(new InboxMessageConfiguration());
     }
 
     /// <summary>

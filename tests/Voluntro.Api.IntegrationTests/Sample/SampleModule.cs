@@ -33,10 +33,14 @@ public sealed class SampleModule : IModule
 
         services.AddScoped<IQueryHandler<GetSampleOrder, SampleOrderDto>, GetSampleOrderHandler>();
 
-        services.AddCommandHandlers<SampleDbContext>()
+        services.AddHandlers<SampleDbContext>()
             .AddValidated<CreateSampleOrder, SampleOrderId, CreateSampleOrderHandler, CreateSampleOrderValidator>()
             .AddValidated<UpdateSampleOrder, UpdateSampleOrderHandler, UpdateSampleOrderValidator>()
             .AddValidated<AddSampleOrderLine, SampleOrderLineId, AddSampleOrderLineHandler, AddSampleOrderLineValidator>()
-            .Add<PlaceSampleOrder, PlaceSampleOrderHandler>();
+            .Add<PlaceSampleOrder, PlaceSampleOrderHandler>()
+            // Publishing runs first on purpose: when counting then fails, the outbox message is already in the change
+            // tracker, so the tests prove it is discarded rather than never written.
+            .AddDomainEventHandler<SampleOrderPlaced, PublishOrderPlacedHandler>()
+            .AddDomainEventHandler<SampleOrderPlaced, CountPlacedOrderHandler>();
     }
 }

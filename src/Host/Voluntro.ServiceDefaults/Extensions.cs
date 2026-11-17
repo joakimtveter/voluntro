@@ -62,6 +62,8 @@ public static class Extensions
             .WithTracing(tracing =>
             {
                 tracing.AddSource(builder.Environment.ApplicationName)
+                    // Outbox delivery (OutboxTelemetry.SourceName; ServiceDefaults doesn't reference BuildingBlocks).
+                    .AddSource("Voluntro.Outbox")
                     .AddAspNetCoreInstrumentation(tracing =>
                         // Exclude health check requests from tracing
                         tracing.Filter = context =>

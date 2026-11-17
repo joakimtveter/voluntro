@@ -12,8 +12,9 @@ namespace Voluntro.BuildingBlocks.Infrastructure.Tests;
 /// transaction outermost, an invalid command would also be discarded; with the handler outermost, it would run.
 /// </summary>
 /// <remarks>
-/// The handlers are registered through the real registrar. The unit of work is a module context that re-implements
-/// <see cref="IUnitOfWork"/>, so the registrar resolves it exactly as it resolves a real module's context.
+/// The handlers are registered through the real registrar. The unit of work only records: it is registered under the
+/// context's key before <c>AddHandlers</c>, which then keeps it, so the registrar resolves it exactly as it resolves a
+/// real module's unit of work.
 /// </remarks>
 public sealed class CommandPipelineOrderTests
 {
@@ -55,8 +56,9 @@ public sealed class CommandPipelineOrderTests
         var services = new ServiceCollection();
         services.AddScoped<CallLog>();
         services.AddDbContext<RecordingDbContext>(options => options.UseNpgsql("Host=never-connected"));
+        services.AddKeyedScoped<IUnitOfWork, RecordingUnitOfWork>(typeof(RecordingDbContext));
 
-        services.AddCommandHandlers<RecordingDbContext>()
+        services.AddHandlers<RecordingDbContext>()
             .AddValidated<WithValue, int, WithValueHandler, WithValueValidator>()
             .AddValidated<WithoutValue, WithoutValueHandler, WithoutValueValidator>();
 
@@ -120,22 +122,22 @@ public sealed class CommandPipelineOrderTests
         }
     }
 
-    /// <summary>
-    /// A module context whose unit of work only records. Re-implementing the interface replaces
-    /// <see cref="ModuleDbContext"/>'s own explicit implementation, so nothing reaches a database.
-    /// </summary>
-    private sealed class RecordingDbContext(DbContextOptions<RecordingDbContext> options, CallLog log)
-        : ModuleDbContext(options), IUnitOfWork
+    /// <summary>A unit of work that only records, so nothing reaches a database.</summary>
+    private sealed class RecordingUnitOfWork(CallLog log) : IUnitOfWork
     {
-        protected override string Schema => "recording";
-
-        Task<Result> IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken)
+        public Task<Result> SaveChangesAsync(CancellationToken cancellationToken)
         {
             log.Calls.Add("save");
             return Task.FromResult(Result.Success());
         }
 
-        void IUnitOfWork.DiscardChanges() => log.Calls.Add("discard");
+        public void DiscardChanges() => log.Calls.Add("discard");
+    }
+
+    /// <summary>The module context the handlers are registered for; the recording unit of work stands in for it.</summary>
+    private sealed class RecordingDbContext(DbContextOptions<RecordingDbContext> options) : ModuleDbContext(options)
+    {
+        protected override string Schema => "recording";
 
         protected override void ConfigureModel(ModelBuilder modelBuilder)
         {
